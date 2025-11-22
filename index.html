@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simplify - Jobs</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#0A66C2"/>
+                    <path d="M2 17L12 22L22 17" stroke="#10B981" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M2 12L12 17L22 12" stroke="#10B981" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span class="logo-text">Simplify</span>
+            </div>
+            <nav class="header-nav">
+                <a href="#" class="nav-item">Dashboard</a>
+                <a href="#" class="nav-item">Matches</a>
+                <a href="#" class="nav-item active">Jobs</a>
+                <a href="#" class="nav-item">Job Tracker</a>
+                <a href="#" class="nav-item">Documents</a>
+                <a href="#" class="nav-item">Profile</a>
+            </nav>
+            <div class="header-actions">
+                <button class="icon-btn" aria-label="Speaker">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a1 1 0 011 1v14a1 1 0 01-1 1H8a1 1 0 01-1-1V3a1 1 0 011-1h2z"/>
+                    </svg>
+                </button>
+                <button class="icon-btn" aria-label="Help">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 9a1 1 0 112 0v1a1 1 0 11-2 0V9zm1 4a1 1 0 100 2 1 1 0 000-2z"/>
+                    </svg>
+                </button>
+                <button class="icon-btn" aria-label="Notifications">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+                    </svg>
+                </button>
+                <div class="user-avatar">
+                    <span>SJ</span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                        <path d="M6 9L1 4h10L6 9z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Search and Filters -->
+        <div class="search-section">
+            <div class="search-container">
+                <h1 class="search-title">Search All Jobs</h1>
+                <div class="search-bar-wrapper">
+                    <input type="text" class="search-input" placeholder="Software Engineering" value="Software Engineering">
+                </div>
+                <div class="filters-row">
+                    <button class="filter-tag active">
+                        Location (1)
+                        <span class="filter-remove">×</span>
+                    </button>
+                    <button class="filter-tag active">
+                        Job Type (2)
+                        <span class="filter-remove">×</span>
+                    </button>
+                    <button class="filter-tag">Experience Level</button>
+                    <button class="filter-tag active">
+                        Category (6)
+                        <span class="filter-remove">×</span>
+                    </button>
+                    <button class="filter-tag">More filters</button>
+                </div>
+                <div class="search-actions">
+                    <button class="save-search-btn">Save Search</button>
+                    <button class="clear-filters-btn">Clear All Filters</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Three Column Layout -->
+        <div class="jobs-layout">
+            <!-- Left Column - Job Listings -->
+            <div class="jobs-list-column">
+                <div class="jobs-list-header">
+                    <span class="jobs-count">Showing 21 of 34,329 Jobs</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="mostRecent">
+                        <span class="toggle-label">Most recent</span>
+                    </label>
+                </div>
+                <div class="jobs-list" id="jobsList">
+                    <!-- Job cards will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Middle Column - Job Details -->
+            <div class="job-details-column">
+                <div class="job-details" id="jobDetails">
+                    <div class="job-tabs">
+                        <button class="tab-btn active" data-tab="overview">Overview</button>
+                        <button class="tab-btn" data-tab="company">Company</button>
+                    </div>
+                    <div class="tab-content active" id="overviewTab">
+                        <h2 class="job-title" id="detailJobTitle">Software Engineer</h2>
+                        <p class="job-live-badge">Confirmed live in the last 24 hours</p>
+                        
+                        <div class="simplify-plus-banner">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M8 0a8 8 0 100 16A8 8 0 008 0zM7 7V4h2v3h3v2H9v3H7V9H4V7h3z"/>
+                            </svg>
+                            <span>Unlock job analytics with Simplify+</span>
+                        </div>
+
+                        <div class="company-info-header">
+                            <div class="company-logo-small" id="detailCompanyLogo">GS</div>
+                            <div class="company-info-text">
+                                <a href="company.html" class="company-name-link" id="detailCompanyName">GreenSpark Software</a>
+                                <p class="company-size" id="detailCompanySize">11-50 employees</p>
+                                <p class="company-description" id="detailCompanyDesc">Software for scrap yard operations management</p>
+                            </div>
+                        </div>
+
+                        <div class="job-meta-info">
+                            <div class="meta-item">
+                                <span class="meta-label">No salary listed</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Experience level:</span>
+                                <span class="meta-value" id="detailExperience">Mid, Senior</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Location:</span>
+                                <span class="meta-value" id="detailLocation">New York, NY, USA</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Work arrangement:</span>
+                                <span class="meta-value" id="detailWorkArrangement">Remote</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="companyTab">
+                        <div class="company-tab-content">
+                            <p>Company information will be displayed here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Application Panel -->
+            <div class="application-column">
+                <div class="application-actions">
+                    <button class="action-btn secondary">Already Applied?</button>
+                    <button class="action-btn secondary">Save</button>
+                    <button class="action-btn primary">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 0L0 8l8 8 1.5-1.5L3 8l6.5-6.5L8 0z"/>
+                        </svg>
+                        Apply
+                    </button>
+                </div>
+                <div class="application-tabs">
+                    <button class="app-tab-btn active" data-tab="summary">Summary</button>
+                    <button class="app-tab-btn" data-tab="full">Full Job Posting</button>
+                </div>
+                <div class="application-content">
+                    <div class="match-section">
+                        <h3 class="match-title">You match the following <span id="matchCompanyName">GreenSpark Software</span>'s candidate preferences</h3>
+                        <p class="match-description">Employers are more likely to interview you if you match these preferences:</p>
+                        <div class="preference-tags">
+                            <span class="preference-tag match">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M13.854 3.646a.5.5 0 010 .708l-7 7a.5.5 0 01-.708 0l-3.5-3.5a.5.5 0 11.708-.708L6.5 10.293l6.646-6.647a.5.5 0 01.708 0z"/>
+                                </svg>
+                                Degree
+                            </span>
+                            <span class="preference-tag no-match">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M2.146 2.854a.5.5 0 11.708-.708L8 7.293l5.146-5.147a.5.5 0 01.708.708L8.707 8l5.147 5.146a.5.5 0 01-.708.708L8 8.707l-5.146 5.147a.5.5 0 01-.708-.708L7.293 8 2.146 2.854z"/>
+                                </svg>
+                                Experience
+                            </span>
+                        </div>
+                    </div>
+                    <div class="referral-section">
+                        <p class="referral-text">You have ways to get a <span id="referralCompanyName">GreenSpark Software</span> referral from your network.</p>
+                        <div class="referral-profiles">
+                            <div class="profile-avatar">A</div>
+                            <div class="profile-avatar">B</div>
+                            <div class="profile-avatar">C</div>
+                        </div>
+                        <button class="get-referrals-btn">Get referrals →</button>
+                    </div>
+                    <div class="requirements-section">
+                        <h4 class="requirements-title">Requirements</h4>
+                        <ul class="requirements-list" id="requirementsList">
+                            <li>4+ years of professional software engineering experience</li>
+                            <li>Expertise in React JavaScript/TypeScript</li>
+                            <li>Advanced knowledge of cloud platforms (AWS, Azure, GCP)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Fixed Feedback Button -->
+    <button class="feedback-btn">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0a8 8 0 100 16A8 8 0 008 0zM7 7V4h2v3h3v2H9v3H7V9H4V7h3z"/>
+        </svg>
+        Feedback
+    </button>
+
+    <script src="script.js"></script>
+</body>
+</html>
+

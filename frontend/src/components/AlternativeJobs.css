@@ -1,0 +1,93 @@
+.alternative-jobs-card {
+  background-color: var(--bg-white);
+  border-radius: 8px;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+}
+
+.card-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.alternatives-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.alternative-item {
+  padding: 16px;
+  background-color: var(--bg-lighter);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+}
+
+.alternative-item:hover {
+  border-color: var(--simplify-blue);
+  box-shadow: 0 2px 8px rgba(10, 102, 194, 0.1);
+}
+
+.alt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.alt-company {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.alt-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.alt-badge {
+  padding: 4px 8px;
+  background-color: var(--success-green);
+  color: white;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.alt-scores {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.alt-score {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.alt-score-label {
+  color: var(--text-secondary);
+}
+
+.alt-score-value {
+  color: var(--simplify-blue);
+  font-weight: 600;
+}
+
+.alt-sponsorship {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.alt-sponsorship-value {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+

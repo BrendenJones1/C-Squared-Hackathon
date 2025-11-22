@@ -16,6 +16,11 @@ function App() {
   const [error, setError] = useState(null)
 
   const handleAnalyze = async (text) => {
+    if (!text || text.trim().length < 10) {
+      setError('Please provide a job description with at least 10 characters.')
+      return
+    }
+    
     setLoading(true)
     setError(null)
 
@@ -35,17 +40,38 @@ function App() {
       })
       
       if (!response.ok) {
-        throw new Error('Analysis failed')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || 'Analysis failed. Please check your connection and try again.')
       }
       
       const data = await response.json()
       setAnalysisResults(data)
       setJobText(text)
       
-      // Extract company name if possible (simple extraction)
-      const companyMatch = text.match(/(?:at|from|company:)\s+([A-Z][a-zA-Z\s]+)/i)
-      if (companyMatch) {
-        const companyName = companyMatch[1].trim()
+      // Extract company name if possible (improved extraction)
+      let companyName = null
+      
+      // Try multiple patterns
+      const patterns = [
+        /(?:at|from|company:)\s+([A-Z][a-zA-Z0-9\s&]+?)(?:\s|$|,|\.|;)/i,
+        /(?:Company|Employer):\s*([A-Z][a-zA-Z0-9\s&]+?)(?:\s|$|,|\.|;)/i,
+        /([A-Z][a-zA-Z0-9\s&]+?)\s+(?:is|seeks|looking|hiring)/i,
+        /(?:Join|Work at|Apply to)\s+([A-Z][a-zA-Z0-9\s&]+?)(?:\s|$|,|\.|;)/i
+      ]
+      
+      for (const pattern of patterns) {
+        const match = text.match(pattern)
+        if (match && match[1]) {
+          companyName = match[1].trim()
+          // Clean up common suffixes
+          companyName = companyName.replace(/\s+(Inc|LLC|Corp|Corporation|Ltd|Limited)$/i, '')
+          if (companyName.length > 2 && companyName.length < 50) {
+            break
+          }
+        }
+      }
+      
+      if (companyName) {
         await fetchCompanyData(companyName)
       }
       
@@ -81,13 +107,14 @@ function App() {
       })
       
       if (!response.ok) {
-        throw new Error('Rewrite failed')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || 'Rewrite failed. Please try again.')
       }
       
       const data = await response.json()
       setRewriteResult(data)
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'An unexpected error occurred during rewrite. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -115,6 +142,17 @@ function App() {
   const handleParseLink = async (url) => {
     setLoading(true)
     setError(null)
+    
+    // Validate URL format
+    try {
+      new URL(url)
+    } catch {
+      const errorMsg = 'Please enter a valid URL (e.g., https://linkedin.com/jobs/view/...)'
+      setError(errorMsg)
+      setLoading(false)
+      throw new Error(errorMsg)
+    }
+    
     try {
       const response = await fetch('http://localhost:8000/parse-link', {
         method: 'POST',
@@ -125,7 +163,10 @@ function App() {
       })
       
       if (!response.ok) {
-        throw new Error('Link parsing failed')
+        const errorData = await response.json().catch(() => ({}))
+        const errorMsg = errorData.detail || 'Link parsing failed. Please check your connection and try again.'
+        setError(errorMsg)
+        throw new Error(errorMsg)
       }
       
       const data = await response.json()
@@ -139,7 +180,9 @@ function App() {
         )
       }
     } catch (err) {
-      setError(err.message)
+      const errorMsg = err.message || 'An unexpected error occurred. Please try again or paste the job description text directly.'
+      setError(errorMsg)
+      throw err
     } finally {
       setLoading(false)
     }
@@ -169,14 +212,19 @@ function App() {
                 original={jobText}
                 rewrite={rewriteResult}
                 onRewrite={handleRewrite}
+                keywordMatches={analysisResults?.keyword_analysis ? Object.values(analysisResults.keyword_analysis) : []}
               />
             )}
             {companyData && (
               <CompanyDEI data={companyData} />
             )}
-            {companyData?.alternatives && companyData.alternatives.length > 0 && (
-              <AlternativeJobs alternatives={companyData.alternatives} />
-            )}
+            {(companyData?.alternatives && companyData.alternatives.length > 0) || 
+             (companyData?.alternative_jobs && companyData.alternative_jobs.length > 0) ? (
+              <AlternativeJobs 
+                alternatives={companyData.alternatives || []} 
+                alternativeJobs={companyData.alternative_jobs || []}
+              />
+            ) : null}
           </div>
         </div>
       </main>

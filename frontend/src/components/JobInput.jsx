@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import './JobInput.css'
 
 function JobInput({ onAnalyze, onParseLink, loading, initialText }) {
@@ -6,13 +6,20 @@ function JobInput({ onAnalyze, onParseLink, loading, initialText }) {
   const [text, setText] = useState(initialText || '')
   const [url, setUrl] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
+  const [linkSuccess, setLinkSuccess] = useState(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     
     if (inputMode === 'link' && url) {
       setAnalyzing(true)
-      await onParseLink(url)
+      setLinkSuccess(null)
+      try {
+        await onParseLink(url)
+        setLinkSuccess(true)
+      } catch (err) {
+        setLinkSuccess(false)
+      }
       setAnalyzing(false)
     } else if (inputMode === 'text' && text.trim()) {
       setAnalyzing(true)
@@ -20,10 +27,18 @@ function JobInput({ onAnalyze, onParseLink, loading, initialText }) {
       setAnalyzing(false)
     }
   }
+  
+  // Reset success message when URL changes
+  useEffect(() => {
+    if (url) {
+      setLinkSuccess(null)
+    }
+  }, [url])
 
   return (
     <div className="job-input-card">
       <h2 className="card-title">Analyze Job Posting</h2>
+      <p className="card-subtitle">Detect bias and get inclusive rewrite suggestions</p>
       
       <div className="input-mode-toggle">
         <button
@@ -78,9 +93,28 @@ function JobInput({ onAnalyze, onParseLink, loading, initialText }) {
       </form>
 
       {inputMode === 'link' && (
-        <p className="link-hint">
-          Auto-detecting job posting... (Mock implementation)
-        </p>
+        <div className="link-info">
+          {linkSuccess === true && (
+            <p className="link-success">
+              ✅ Successfully extracted job posting!
+            </p>
+          )}
+          {linkSuccess === false && (
+            <p className="link-error">
+              ⚠️ Could not extract job posting. Try pasting the text directly.
+            </p>
+          )}
+          {linkSuccess === null && (
+            <>
+              <p className="link-hint">
+                ✅ Auto-detecting job posting from LinkedIn, Indeed, Glassdoor, and more
+              </p>
+              <p className="link-tip">
+                Tip: If parsing fails, try copying the job description text directly
+              </p>
+            </>
+          )}
+        </div>
       )}
       
       <p className="analysis-hint">

@@ -7,12 +7,12 @@ import uvicorn
 try:
     from .bias_engine import detect_bias_keywords, analyze_with_classifier, analyze_full
     from .rewrite_engine import rewrite_inclusive
-    from .company_dei import get_company_insights, get_alternatives
+    from .company_dei import get_company_insights, get_alternatives, get_alternative_jobs
     from .link_parser import parse_job_link
 except ImportError:
     from bias_engine import detect_bias_keywords, analyze_with_classifier, analyze_full
     from rewrite_engine import rewrite_inclusive
-    from company_dei import get_company_insights, get_alternatives
+    from company_dei import get_company_insights, get_alternatives, get_alternative_jobs
     from link_parser import parse_job_link
 
 app = FastAPI(title="BiasLens API", version="1.0.0")
@@ -94,10 +94,12 @@ async def company_insights(input: CompanyInput):
     try:
         insights = get_company_insights(input.company)
         alternatives = get_alternatives(input.company)
+        alternative_jobs = get_alternative_jobs(input.company)
         return {
             "company": input.company,
             "insights": insights,
-            "alternatives": alternatives
+            "alternatives": alternatives,
+            "alternative_jobs": alternative_jobs
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

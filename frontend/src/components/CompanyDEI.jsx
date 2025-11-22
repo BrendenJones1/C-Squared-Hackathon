@@ -17,7 +17,10 @@ function CompanyDEI({ data }) {
 
   return (
     <div className="company-dei-card">
-      <h3 className="card-title">Company DEI Snapshot</h3>
+      <h3 className="card-title" style={{ fontSize: '22px', fontWeight: 700, marginBottom: '8px', letterSpacing: '-0.3px' }}>Company DEI Snapshot</h3>
+      <p className="card-subtitle" style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
+        Diversity, equity, and inclusion insights
+      </p>
       <div className="company-name">{company}</div>
 
       <div className="dei-scores">

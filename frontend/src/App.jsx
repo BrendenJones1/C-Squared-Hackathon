@@ -18,6 +18,12 @@ function App() {
   const handleAnalyze = async (text) => {
     setLoading(true)
     setError(null)
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => {
+      controller.abort()
+    }, 10000) // 10 seconds
+
     try {
       const response = await fetch('http://localhost:8000/analyze/full', {
         method: 'POST',
@@ -25,6 +31,7 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ text }),
+        signal: controller.signal,
       })
       
       if (!response.ok) {
@@ -45,8 +52,15 @@ function App() {
       // Automatically generate rewrite
       await handleRewrite(text)
     } catch (err) {
-      setError(err.message)
+      if (err.name === 'AbortError') {
+        setError(
+          'Analysis took longer than 10 seconds and was cancelled. Please try again or shorten the job description.'
+        )
+      } else {
+        setError(err.message)
+      }
     } finally {
+      clearTimeout(timeoutId)
       setLoading(false)
     }
   }
@@ -119,7 +133,10 @@ function App() {
         setJobText(data.raw_text)
         await handleAnalyze(data.raw_text)
       } else {
-        throw new Error(data.error || 'Could not extract job posting from URL. The site may require login or use JavaScript rendering.')
+        throw new Error(
+          data.error ||
+            'Could not detect a valid job posting at this URL. The site may require login, use heavy JavaScript, or may not be a standard job posting page.'
+        )
       }
     } catch (err) {
       setError(err.message)

@@ -5,6 +5,7 @@ from pydantic import BaseModel
 class BiasAnalysisResult(BaseModel):
     bias_score: int
     international_student_bias_score: int
+    inclusivity_score: int
     keyword_analysis: Dict
     classification: Dict
     red_flags: List[Dict]

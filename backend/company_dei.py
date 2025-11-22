@@ -182,6 +182,61 @@ def get_company_insights(company_name: str) -> Optional[Dict]:
     }
 
 
+# Mock alternative jobs dataset
+ALTERNATIVE_JOBS = [
+    {
+        "job_title": "Senior Software Engineer",
+        "company": "CloudScale Inc",
+        "location": "Remote / San Francisco, CA",
+        "inclusivity_score": 4.7,
+        "international_friendly": 4.9,
+        "sponsorship_history": "Very Active",
+        "badges": ["International Friendly", "Verified Sponsorship", "Remote Friendly"],
+        "description": "We're looking for a skilled software engineer to join our diverse team. Strong communication skills required. Work authorization required. We welcome candidates from all backgrounds."
+    },
+    {
+        "job_title": "Full Stack Developer",
+        "company": "GlobalTech Corp",
+        "location": "New York, NY / Remote",
+        "inclusivity_score": 4.6,
+        "international_friendly": 4.7,
+        "sponsorship_history": "Very Active",
+        "badges": ["International Friendly", "Verified Sponsorship", "Diverse Team"],
+        "description": "Join our inclusive engineering team. We value diverse perspectives and experiences. Relevant work experience preferred. Strong English communication skills required."
+    },
+    {
+        "job_title": "Product Manager",
+        "company": "Augment",
+        "location": "Seattle, WA",
+        "inclusivity_score": 4.5,
+        "international_friendly": 4.8,
+        "sponsorship_history": "Very Active",
+        "badges": ["International Friendly", "Verified Sponsorship"],
+        "description": "We're seeking a collaborative product manager to help build inclusive products. Experience with cross-functional teams preferred. We support work authorization for qualified candidates."
+    },
+    {
+        "job_title": "Data Scientist",
+        "company": "InnovateAI",
+        "location": "Boston, MA / Remote",
+        "inclusivity_score": 4.3,
+        "international_friendly": 4.4,
+        "sponsorship_history": "Active",
+        "badges": ["International Friendly", "Remote Friendly"],
+        "description": "Looking for a data scientist passionate about building fair and unbiased AI systems. We welcome candidates from all backgrounds. Work authorization required."
+    },
+    {
+        "job_title": "DevOps Engineer",
+        "company": "GreenSpark Software",
+        "location": "Austin, TX",
+        "inclusivity_score": 4.2,
+        "international_friendly": 4.5,
+        "sponsorship_history": "Active",
+        "badges": ["International Friendly", "Verified Sponsorship"],
+        "description": "Join our DevOps team building scalable infrastructure. We value diverse technical backgrounds. Strong problem-solving skills required. Work authorization required."
+    }
+]
+
+
 def get_alternatives(company_name: str, limit: int = 3) -> List[Dict]:
     """Get alternative companies with better DEI scores"""
     company_lower = company_name.lower()
@@ -226,4 +281,15 @@ def get_alternatives(company_name: str, limit: int = 3) -> List[Dict]:
         }
         for c in alternatives[:limit]
     ]
+
+
+def get_alternative_jobs(company_name: str = None, limit: int = 5) -> List[Dict]:
+    """Get alternative job postings that are more inclusive"""
+    # Filter out jobs from the same company if company_name provided
+    if company_name:
+        company_lower = company_name.lower()
+        filtered_jobs = [j for j in ALTERNATIVE_JOBS if j["company"].lower() != company_lower]
+        return filtered_jobs[:limit]
+    
+    return ALTERNATIVE_JOBS[:limit]
 

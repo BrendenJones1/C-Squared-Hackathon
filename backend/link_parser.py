@@ -170,6 +170,17 @@ def scrape_linkedin_job(url: str) -> Dict:
         # If we got at least title or description, return results
         if title or description:
             logger.info(f"Successfully scraped job: {title} at {company}")
+            raw_text = f"{title or 'Job Posting'}"
+            if company:
+                raw_text += f" at {company}"
+            raw_text += "\n\n"
+            if description:
+                raw_text += description
+            else:
+                raw_text += "Job description not available."
+            if location:
+                raw_text += f"\n\nLocation: {location}"
+            
             return {
                 "success": True,
                 "url": url,
@@ -178,7 +189,8 @@ def scrape_linkedin_job(url: str) -> Dict:
                 "description": description or "Job description not available.",
                 "location": location or "Location not specified",
                 "type": "Full-Time",  # LinkedIn doesn't always show this clearly
-                "raw_text": f"{title or 'Job Posting'} at {company or 'Company'}\n\n{description or 'Job description not available.'}\n\nLocation: {location or 'Location not specified'}"
+                "raw_text": raw_text,
+                "message": f"Successfully extracted job posting from {urlparse(url).netloc}"
             }
         else:
             logger.warning(f"Could not extract job data from LinkedIn page")

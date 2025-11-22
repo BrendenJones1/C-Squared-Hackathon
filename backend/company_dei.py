@@ -227,3 +227,54 @@ def get_alternatives(company_name: str, limit: int = 3) -> List[Dict]:
         for c in alternatives[:limit]
     ]
 
+
+def get_alternative_jobs(job_title: str, company_name: Optional[str] = None, limit: int = 5) -> List[Dict]:
+    """Get safer alternative job postings (same/similar role at more inclusive companies)."""
+    title = job_title.strip() or "Role"
+    base_alternatives = get_alternatives(company_name or "", limit=limit)
+
+    jobs: List[Dict] = []
+    for alt in base_alternatives:
+        # Derive a friendly location string from global footprint when available
+        footprint = next((c for c in DEI_DATA if c["company"] == alt["company"]), None)
+        regions = footprint["global_footprint"] if footprint else []
+        location = ", ".join(regions) if regions else "Remote / Various locations"
+
+        jobs.append(
+            {
+                "job_title": title,
+                "company": alt["company"],
+                "location": location,
+                "inclusivity_score": alt["inclusivity_score"],
+                "international_friendly": alt["international_friendly"],
+                "sponsorship_history": alt["sponsorship_history"],
+                "badges": alt.get("badges", []),
+            }
+        )
+
+    return jobs
+
+
+def get_top_companies(limit: int = 10) -> List[Dict]:
+    """Get top international-friendly companies for browsing."""
+    sorted_companies = sorted(
+        DEI_DATA,
+        key=lambda x: (x["inclusivity_score"], x["international_friendly"]),
+        reverse=True,
+    )
+
+    top: List[Dict] = []
+    for company in sorted_companies[:limit]:
+        top.append(
+            {
+                "company": company["company"],
+                "inclusivity_score": company["inclusivity_score"],
+                "international_friendly": company["international_friendly"],
+                "sponsorship_history": company["sponsorship_history"],
+                "global_footprint": company["global_footprint"],
+                "unbiased_example": "Inclusive job descriptions focus on skills and impact, avoid visa and age restrictions, and welcome candidates from diverse backgrounds.",
+            }
+        )
+
+    return top
+

@@ -1,0 +1,113 @@
+.batch-card {
+  background-color: var(--bg-white);
+  border-radius: 8px;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+}
+
+.batch-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.batch-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.batch-textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.batch-btn {
+  align-self: flex-start;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: none;
+  background-color: var(--simplify-blue);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.batch-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.batch-error {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--error-red);
+}
+
+.batch-results {
+  margin-top: 16px;
+}
+
+.batch-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.batch-sort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.batch-sort select {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.batch-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.batch-table th,
+.batch-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.batch-row {
+  cursor: pointer;
+}
+
+.batch-row:hover {
+  background-color: var(--bg-lighter);
+}
+
+.batch-title {
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.batch-click-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+

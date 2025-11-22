@@ -38,9 +38,20 @@
 }
 
 .alt-company {
-  font-size: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alt-job-title {
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.alt-company-name {
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .alt-badges {
@@ -88,6 +99,18 @@
 
 .alt-sponsorship-value {
   font-weight: 500;
+  color: var(--text-primary);
+}
+
+.alt-location {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.alt-location-value {
   color: var(--text-primary);
 }
 

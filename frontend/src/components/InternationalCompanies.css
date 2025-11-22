@@ -1,0 +1,99 @@
+.intl-companies-card {
+  background-color: var(--bg-white);
+  border-radius: 8px;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+}
+
+.intl-company-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.intl-company-item {
+  padding: 16px;
+  background-color: var(--bg-lighter);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.intl-company-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.intl-company-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.intl-company-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.intl-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  background-color: var(--success-green);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.intl-badge.secondary {
+  background-color: var(--simplify-blue);
+}
+
+.intl-company-scores {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.intl-score {
+  display: flex;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.intl-score-label {
+  color: var(--text-secondary);
+}
+
+.intl-score-value {
+  color: var(--simplify-blue);
+  font-weight: 600;
+}
+
+.intl-company-footprint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.intl-footprint-label {
+  font-weight: 500;
+}
+
+.intl-example {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.intl-example-label {
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+.intl-example-text {
+  font-style: italic;
+}
+
+

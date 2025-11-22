@@ -10,6 +10,8 @@ A web application that analyzes job postings for bias and provides inclusive alt
 - **Company DEI Snapshot**: View company diversity, equity, and inclusion metrics
 - **Alternative Jobs**: Find safer, more inclusive job postings
 - **Link Parser**: Paste job links or text directly
+ - **Batch Analysis**: Quickly scan multiple postings at once and compare bias scores
+ - **International-Friendly Companies**: Browse companies known for inclusive, global hiring
 
 ## Project Structure
 
@@ -76,4 +78,9 @@ docker-compose up
 - **Backend**: FastAPI, Transformers (Hugging Face), OpenAI
 - **Frontend**: React, Vite
 - **NLP**: facebook/bart-large-mnli for zero-shot classification
+
+## Future Roadmap
+
+- **Browser Extension Integration**: Analyze job postings directly on LinkedIn, Indeed, and other boards via a one-click browser extension button, sending the page content to BiasLens in the background and overlaying bias scores in place.
+- **Richer DEI Data**: Deeper integration with public sponsorship and DEI datasets to power more precise company scores.
 

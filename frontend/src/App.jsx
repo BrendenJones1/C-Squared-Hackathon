@@ -5,6 +5,8 @@ import AnalysisResults from './components/AnalysisResults'
 import RewritePanel from './components/RewritePanel'
 import CompanyDEI from './components/CompanyDEI'
 import AlternativeJobs from './components/AlternativeJobs'
+import InternationalCompanies from './components/InternationalCompanies'
+import BatchAnalysis from './components/BatchAnalysis'
 import './App.css'
 
 function App() {
@@ -12,6 +14,8 @@ function App() {
   const [analysisResults, setAnalysisResults] = useState(null)
   const [rewriteResult, setRewriteResult] = useState(null)
   const [companyData, setCompanyData] = useState(null)
+  const [alternativeJobs, setAlternativeJobs] = useState([])
+  const [internationalCompanies, setInternationalCompanies] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -44,10 +48,19 @@ function App() {
       
       // Extract company name if possible (simple extraction)
       const companyMatch = text.match(/(?:at|from|company:)\s+([A-Z][a-zA-Z\s]+)/i)
+      let companyName = null
       if (companyMatch) {
-        const companyName = companyMatch[1].trim()
+        companyName = companyMatch[1].trim()
         await fetchCompanyData(companyName)
       }
+
+      // Derive a simple job title from the first line
+      const firstLine = text.trim().split('\n')[0]
+      const titleMatch = firstLine.split(' at ')[0]
+      const jobTitle = (titleMatch || firstLine || 'Role').trim()
+
+      // Fetch safer alternative jobs
+      await fetchAlternativeJobs(jobTitle, companyName)
       
       // Automatically generate rewrite
       await handleRewrite(text)
@@ -145,6 +158,43 @@ function App() {
     }
   }
 
+  const fetchAlternativeJobs = async (jobTitle, companyName) => {
+    try {
+      const response = await fetch('http://localhost:8000/alternatives/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ job_title: jobTitle, company: companyName || null }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAlternativeJobs(data.alternatives || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch alternative jobs:', err)
+    }
+  }
+
+  React.useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const response = await fetch(
+          'http://localhost:8000/companies/international-friendly?limit=6'
+        )
+        if (response.ok) {
+          const data = await response.json()
+          setInternationalCompanies(data.companies || [])
+        }
+      } catch (err) {
+        console.error('Failed to fetch international-friendly companies:', err)
+      }
+    }
+
+    fetchCompanies()
+  }, [])
+
   return (
     <div className="app">
       <Header />
@@ -157,10 +207,9 @@ function App() {
               loading={loading}
               initialText={jobText}
             />
+            <BatchAnalysis onAnalyzeSingle={handleAnalyze} />
             {error && <div className="error-message">{error}</div>}
-            {analysisResults && (
-              <AnalysisResults results={analysisResults} />
-            )}
+            {analysisResults && <AnalysisResults results={analysisResults} />}
           </div>
           
           <div className="right-column">
@@ -168,14 +217,16 @@ function App() {
               <RewritePanel
                 original={jobText}
                 rewrite={rewriteResult}
+                keywordAnalysis={analysisResults?.keyword_analysis}
                 onRewrite={handleRewrite}
               />
             )}
-            {companyData && (
-              <CompanyDEI data={companyData} />
+            {companyData && <CompanyDEI data={companyData} />}
+            {alternativeJobs && alternativeJobs.length > 0 && (
+              <AlternativeJobs alternatives={alternativeJobs} />
             )}
-            {companyData?.alternatives && companyData.alternatives.length > 0 && (
-              <AlternativeJobs alternatives={companyData.alternatives} />
+            {internationalCompanies && internationalCompanies.length > 0 && (
+              <InternationalCompanies companies={internationalCompanies} />
             )}
           </div>
         </div>

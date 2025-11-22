@@ -7,12 +7,22 @@ import uvicorn
 try:
     from .bias_engine import detect_bias_keywords, analyze_with_classifier, analyze_full
     from .rewrite_engine import rewrite_inclusive
-    from .company_dei import get_company_insights, get_alternatives
+    from .company_dei import (
+        get_company_insights,
+        get_alternatives,
+        get_alternative_jobs,
+        get_top_companies,
+    )
     from .link_parser import parse_job_link
 except ImportError:
     from bias_engine import detect_bias_keywords, analyze_with_classifier, analyze_full
     from rewrite_engine import rewrite_inclusive
-    from company_dei import get_company_insights, get_alternatives
+    from company_dei import (
+        get_company_insights,
+        get_alternatives,
+        get_alternative_jobs,
+        get_top_companies,
+    )
     from link_parser import parse_job_link
 
 app = FastAPI(title="BiasLens API", version="1.0.0")
@@ -38,6 +48,21 @@ class URLInput(BaseModel):
 
 class CompanyInput(BaseModel):
     company: str
+
+
+class AlternativeJobsInput(BaseModel):
+    job_title: str
+    company: Optional[str] = None
+
+
+class BatchJob(BaseModel):
+    id: str
+    text: str
+    use_nlp: Optional[bool] = False
+
+
+class BatchAnalyzeInput(BaseModel):
+    jobs: List[BatchJob]
 
 
 @app.get("/health")
@@ -99,6 +124,52 @@ async def company_insights(input: CompanyInput):
             "insights": insights,
             "alternatives": alternatives
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/alternatives/jobs")
+async def alternative_jobs(input: AlternativeJobsInput):
+    """Recommend safer alternative job postings (same role at more inclusive companies)."""
+    try:
+        jobs = get_alternative_jobs(input.job_title, input.company)
+        return {"job_title": input.job_title, "alternatives": jobs}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/companies/international-friendly")
+async def international_friendly_companies(limit: int = 10):
+    """Browse top international-friendly companies by inclusivity score."""
+    try:
+        companies = get_top_companies(limit=limit)
+        return {"companies": companies}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/analyze/batch")
+async def analyze_batch(input: BatchAnalyzeInput):
+    """Quick scan multiple postings and return bias scores list."""
+    try:
+        results = []
+        for job in input.jobs:
+            analysis = analyze_full(job.text, use_nlp=job.use_nlp or False)
+            # Derive a simple title from the first line of text
+            first_line = job.text.strip().splitlines()[0] if job.text.strip() else ""
+            title = first_line[:120]
+            results.append(
+                {
+                    "id": job.id,
+                    "title": title,
+                    "bias_score": analysis.get("bias_score"),
+                    "international_student_bias_score": analysis.get(
+                        "international_student_bias_score"
+                    ),
+                    "inclusivity_score": analysis.get("inclusivity_score"),
+                }
+            )
+        return {"results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

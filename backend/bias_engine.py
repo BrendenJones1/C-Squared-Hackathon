@@ -441,6 +441,7 @@ def analyze_full(text: str, use_nlp: bool = False) -> Dict:
         "bias_score": bias_score,
         "international_student_bias_score": intl_score,
         "inclusivity_score": inclusivity_score,
+        "inclusivity_score": inclusivity_score,
         "keyword_analysis": keyword_results,
         "classification": classifier_results or {},
         "red_flags": red_flags,

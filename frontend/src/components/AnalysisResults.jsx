@@ -40,10 +40,16 @@ function AnalysisResults({ results }) {
 
         <div className="score-card intl-score">
           <div className="score-label">International Student Bias</div>
-          <div className={`score-value ${getScoreColor(international_student_bias_score)}`}>
+          <div
+            className={`score-value ${getScoreColor(
+              international_student_bias_score
+            )}`}
+          >
             {international_student_bias_score}/100
           </div>
-          <div className="score-description">{getScoreLabel(international_student_bias_score)}</div>
+          <div className="score-description">
+            {getScoreLabel(international_student_bias_score)}
+          </div>
         </div>
 
         {inclusivity_score && (
@@ -97,15 +103,21 @@ function AnalysisResults({ results }) {
           <div className="breakdown-items">
             <div className="breakdown-item">
               <span className="breakdown-label">Visa Requirements:</span>
-              <span className="breakdown-value">{breakdown.visa_requirements} pts</span>
+              <span className="breakdown-value">
+                {breakdown.visa_requirements} pts
+              </span>
             </div>
             <div className="breakdown-item">
               <span className="breakdown-label">Language Bias:</span>
-              <span className="breakdown-value">{breakdown.language_bias} pts</span>
+              <span className="breakdown-value">
+                {breakdown.language_bias} pts
+              </span>
             </div>
             <div className="breakdown-item">
               <span className="breakdown-label">Cultural Assumptions:</span>
-              <span className="breakdown-value">{breakdown.cultural_assumptions} pts</span>
+              <span className="breakdown-value">
+                {breakdown.cultural_assumptions} pts
+              </span>
             </div>
             {breakdown.gender_discrimination !== undefined && (
               <div className="breakdown-item">
@@ -133,7 +145,9 @@ function AnalysisResults({ results }) {
             )}
             <div className="breakdown-item">
               <span className="breakdown-label">Other Exclusionary Terms:</span>
-              <span className="breakdown-value">{breakdown.other_exclusionary} pts</span>
+              <span className="breakdown-value">
+                {breakdown.other_exclusionary} pts
+              </span>
             </div>
           </div>
         </div>

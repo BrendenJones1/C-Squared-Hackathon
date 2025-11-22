@@ -322,6 +322,8 @@ def analyze_full(text: str, use_nlp: bool = False) -> Dict:
     # Step 3: Calculate scores based on real analysis (keywords are primary)
     bias_score = calculate_bias_score(keyword_results, classifier_results or {})
     intl_score = calculate_international_bias_score(keyword_results)
+    # Higher score = more inclusive (inverse of bias score, clamped to 0-100)
+    inclusivity_score = max(0, 100 - bias_score)
     
     # Step 4: Generate red flags from real matches
     red_flags = generate_red_flags(keyword_results)
@@ -331,6 +333,7 @@ def analyze_full(text: str, use_nlp: bool = False) -> Dict:
     return {
         "bias_score": bias_score,
         "international_student_bias_score": intl_score,
+        "inclusivity_score": inclusivity_score,
         "keyword_analysis": keyword_results,
         "classification": classifier_results or {},
         "red_flags": red_flags,

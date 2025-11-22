@@ -2,7 +2,13 @@ import React from 'react'
 import './AnalysisResults.css'
 
 function AnalysisResults({ results }) {
-  const { bias_score, international_student_bias_score, red_flags, breakdown } = results
+  const {
+    bias_score,
+    international_student_bias_score,
+    inclusivity_score,
+    red_flags,
+    breakdown,
+  } = results
 
   const getScoreColor = (score) => {
     if (score >= 70) return 'high'
@@ -15,6 +21,13 @@ function AnalysisResults({ results }) {
     if (score >= 40) return 'Moderate bias risk'
     return 'Low bias risk'
   }
+
+  const effectiveInclusivity =
+    typeof inclusivity_score === 'number'
+      ? inclusivity_score
+      : typeof bias_score === 'number'
+      ? 100 - bias_score
+      : null
 
   return (
     <div className="analysis-results-card">
@@ -31,11 +44,29 @@ function AnalysisResults({ results }) {
 
         <div className="score-card intl-score">
           <div className="score-label">International Student Bias</div>
-          <div className={`score-value ${getScoreColor(international_student_bias_score)}`}>
+          <div
+            className={`score-value ${getScoreColor(
+              international_student_bias_score
+            )}`}
+          >
             {international_student_bias_score}/100
           </div>
-          <div className="score-description">{getScoreLabel(international_student_bias_score)}</div>
+          <div className="score-description">
+            {getScoreLabel(international_student_bias_score)}
+          </div>
         </div>
+
+        {effectiveInclusivity !== null && (
+          <div className="score-card">
+            <div className="score-label">Inclusivity Score</div>
+            <div className="score-value">
+              {effectiveInclusivity}/100
+            </div>
+            <div className="score-description">
+              Higher scores indicate a more inclusive posting
+            </div>
+          </div>
+        )}
       </div>
 
       {breakdown && (
@@ -44,19 +75,27 @@ function AnalysisResults({ results }) {
           <div className="breakdown-items">
             <div className="breakdown-item">
               <span className="breakdown-label">Visa Requirements:</span>
-              <span className="breakdown-value">{breakdown.visa_requirements} pts</span>
+              <span className="breakdown-value">
+                {breakdown.visa_requirements} pts
+              </span>
             </div>
             <div className="breakdown-item">
               <span className="breakdown-label">Language Bias:</span>
-              <span className="breakdown-value">{breakdown.language_bias} pts</span>
+              <span className="breakdown-value">
+                {breakdown.language_bias} pts
+              </span>
             </div>
             <div className="breakdown-item">
               <span className="breakdown-label">Cultural Assumptions:</span>
-              <span className="breakdown-value">{breakdown.cultural_assumptions} pts</span>
+              <span className="breakdown-value">
+                {breakdown.cultural_assumptions} pts
+              </span>
             </div>
             <div className="breakdown-item">
               <span className="breakdown-label">Other Exclusionary Terms:</span>
-              <span className="breakdown-value">{breakdown.other_exclusionary} pts</span>
+              <span className="breakdown-value">
+                {breakdown.other_exclusionary} pts
+              </span>
             </div>
           </div>
         </div>

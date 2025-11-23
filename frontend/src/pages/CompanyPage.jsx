@@ -1,16 +1,46 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SimplifyNav from '../components/SimplifyNav'
+import CompanyDEI from '../components/CompanyDEI'
 import './CompanyPage.css'
 
 function CompanyPage() {
   const navigate = useNavigate()
   const [biasRating, setBiasRating] = useState(null)
+  const [overallRating, setOverallRating] = useState('B')
   const [companyData, setCompanyData] = useState(null)
   
   // Get company name from URL params or default to GreenSpark Software
   const urlParams = new URLSearchParams(window.location.search)
   const companyName = urlParams.get('company') || 'GreenSpark Software'
+  
+  // Convert letter grade to numeric value
+  const gradeToNumber = (grade) => {
+    const gradeMap = { 'A': 4, 'B': 3, 'C': 2, 'D': 1, 'F': 0 }
+    return gradeMap[grade] || 0
+  }
+  
+  // Convert numeric value to letter grade
+  const numberToGrade = (num) => {
+    if (num >= 3.5) return 'A'
+    if (num >= 2.5) return 'B'
+    if (num >= 1.5) return 'C'
+    if (num >= 0.5) return 'D'
+    return 'F'
+  }
+  
+  // Calculate overall rating as average of all ratings
+  const calculateOverallRating = (biasGrade) => {
+    const competitiveEdge = 'C'
+    const growthPotential = 'A'
+    const differentiation = 'B'
+    const biasInclusivity = biasGrade || 'B'
+    
+    const ratings = [competitiveEdge, growthPotential, differentiation, biasInclusivity]
+    const numericValues = ratings.map(gradeToNumber)
+    const average = numericValues.reduce((sum, val) => sum + val, 0) / numericValues.length
+    return numberToGrade(average)
+  }
   
   // Company details mapping
   const companyDetails = {
@@ -40,6 +70,15 @@ function CompanyPage() {
       funding: null,
       industries: ['Administrative Services', 'Office Management'],
       description: 'Summit Ridge Enterprises maintains a traditional workplace culture focused on professional presentation and maintaining a specific company image. The company emphasizes traditional values and expects staff to present themselves in a manner that aligns with their established workplace standards.'
+    },
+    'Amazon': {
+      logo: 'AM',
+      tagline: 'Earth\'s most customer-centric company',
+      size: '10,001+',
+      stage: 'IPO',
+      funding: null,
+      industries: ['E-commerce', 'Cloud Computing', 'Technology', 'Retail'],
+      description: 'Amazon is a multinational technology company focusing on e-commerce, cloud computing, online advertising, digital streaming, and artificial intelligence. The company is one of the Big Five American information technology companies, alongside Alphabet, Apple, Meta, and Microsoft. Amazon is known for its disruption of well-established industries through technological innovation and mass scale.'
     }
   }
   
@@ -72,10 +111,19 @@ function CompanyPage() {
             else grade = 'F'
             
             setBiasRating(grade)
+            setOverallRating(calculateOverallRating(grade))
+          } else {
+            // If no bias rating, calculate overall from the three hardcoded ratings
+            setOverallRating(calculateOverallRating(null))
           }
+        } else {
+          // If API call fails, still calculate overall from hardcoded ratings
+          setOverallRating(calculateOverallRating(null))
         }
       } catch (error) {
         console.error('Error fetching bias rating:', error)
+        // On error, calculate overall from hardcoded ratings
+        setOverallRating(calculateOverallRating(null))
       }
     }
     
@@ -100,6 +148,8 @@ function CompanyPage() {
                 <span style={{ fontSize: '48px', fontWeight: 'bold', color: '#00A1E0' }}>SF</span>
               ) : companyName === 'Summit Ridge Enterprises' ? (
                 <span style={{ fontSize: '48px', fontWeight: 'bold', color: '#6366F1' }}>SR</span>
+              ) : companyName === 'Amazon' ? (
+                <span style={{ fontSize: '48px', fontWeight: 'bold', color: '#FF9900' }}>AM</span>
               ) : (
                 <>
                   <span className="logo-g">{currentCompanyDetails.logo[0]}</span>
@@ -206,8 +256,8 @@ function CompanyPage() {
             </div>
 
             <div className="rating-badge">
-              <div className="rating-grade">{biasRating || 'B'}</div>
-              <p className="rating-explanation">Why {companyName} is rated {biasRating || 'B'}</p>
+              <div className="rating-grade">{overallRating}</div>
+              <p className="rating-explanation">Why {companyName} is rated {overallRating}</p>
             </div>
 
             <div className="rating-breakdown">
@@ -289,7 +339,25 @@ function CompanyPage() {
                 </div>
               </>
             )}
+            {companyName === 'Amazon' && (
+              <>
+                <div className="company-detail-item">
+                  <span className="detail-label">Headquarters:</span>
+                  <span className="detail-value">Seattle, Washington</span>
+                </div>
+                <div className="company-detail-item">
+                  <span className="detail-label">Founded:</span>
+                  <span className="detail-value">1994</span>
+                </div>
+              </>
+            )}
           </div>
+
+          {companyData && companyData.insights && companyData.insights.status !== 'DEI data unavailable' && (
+            <div style={{ marginTop: '32px' }}>
+              <CompanyDEI data={companyData} />
+            </div>
+          )}
         </div>
       </div>
     </div>

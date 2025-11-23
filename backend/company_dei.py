@@ -169,6 +169,39 @@ DEI_DATA = [
         "erg_available": False,
         "global_footprint": ["Canada"],
         "employee_sentiment": 2.3
+    },
+    {
+        "company": "Amazon",
+        "inclusivity_score": 3.8,
+        "leadership_diversity": 3.2,
+        "international_friendly": 4.7,
+        "work_life_balance": 3.5,
+        "sponsorship_history": "Very Active",
+        "diversity_report": "https://www.aboutamazon.ca/workplace/diversity-inclusion",
+        "glassdoor_culture": 3.6,
+        "eeoc_certified": True,
+        "erg_available": True,
+        "global_footprint": ["US", "Canada", "UK", "Germany", "India", "Australia", "Japan", "Singapore", "Brazil", "France", "Italy", "Spain", "Mexico", "China", "South Korea", "UAE", "Netherlands", "Poland", "Czech Republic"],
+        "employee_sentiment": 3.7,
+        "demographics": {
+            "us_workforce": {
+                "racially_diverse": 69.1,
+                "black": 36.8,
+                "latino": 29.8,
+                "asian": 8.8,
+                "multiracial_other": 1.7,
+                "white": 30.9
+            },
+            "global_workforce": {
+                "women": 44.8
+            },
+            "executives": {
+                "women": 22.0,
+                "white": 71.0,
+                "asian": 20.0,
+                "black_latino": 8.0
+            }
+        }
     }
 ]
 
@@ -179,7 +212,7 @@ def get_company_insights(company_name: str) -> Optional[Dict]:
     
     for company in DEI_DATA:
         if company["company"].lower() == company_lower:
-            return {
+            result = {
                 "inclusivity_score": company["inclusivity_score"],
                 "leadership_diversity": company["leadership_diversity"],
                 "international_friendly": company["international_friendly"],
@@ -192,6 +225,9 @@ def get_company_insights(company_name: str) -> Optional[Dict]:
                 "global_footprint": company["global_footprint"],
                 "employee_sentiment": company["employee_sentiment"]
             }
+            if "demographics" in company:
+                result["demographics"] = company["demographics"]
+            return result
     
     # Return "not found" response
     return {

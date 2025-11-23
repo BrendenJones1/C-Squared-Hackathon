@@ -38,6 +38,111 @@ function CompanyDEI({ data }) {
         </div>
       </div>
 
+      {insights.demographics && (
+        <div className="demographics-section" style={{ marginBottom: '28px', paddingBottom: '28px', borderBottom: '2px solid var(--border-color)' }}>
+          <h4 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Workforce Demographics</h4>
+          
+          {insights.demographics.us_workforce && (
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>U.S. Workforce Diversity</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--simplify-blue)' }}>{insights.demographics.us_workforce.racially_diverse}% Diverse</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { label: 'Black', value: insights.demographics.us_workforce.black, color: '#3B82F6' },
+                  { label: 'Latino/a/x', value: insights.demographics.us_workforce.latino, color: '#10B981' },
+                  { label: 'Asian', value: insights.demographics.us_workforce.asian, color: '#8B5CF6' },
+                  { label: 'White', value: insights.demographics.us_workforce.white, color: '#6B7280' },
+                  { label: 'Multiracial/Other', value: insights.demographics.us_workforce.multiracial_other, color: '#F59E0B' }
+                ].map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ minWidth: '100px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                      {item.label}
+                    </div>
+                    <div style={{ flex: 1, height: '8px', backgroundColor: 'var(--bg-lighter)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div 
+                        style={{ 
+                          height: '100%', 
+                          width: `${item.value}%`, 
+                          backgroundColor: item.color,
+                          borderRadius: '4px',
+                          transition: 'width 0.3s ease'
+                        }}
+                      />
+                    </div>
+                    <div style={{ minWidth: '45px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'right' }}>
+                      {item.value}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {insights.demographics.global_workforce && (
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Global Workforce</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ minWidth: '100px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                  Women
+                </div>
+                <div style={{ flex: 1, height: '8px', backgroundColor: 'var(--bg-lighter)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div 
+                    style={{ 
+                      height: '100%', 
+                      width: `${insights.demographics.global_workforce.women}%`, 
+                      backgroundColor: '#EC4899',
+                      borderRadius: '4px'
+                    }}
+                  />
+                </div>
+                <div style={{ minWidth: '45px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'right' }}>
+                  {insights.demographics.global_workforce.women}%
+                </div>
+              </div>
+            </div>
+          )}
+
+          {insights.demographics.executives && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Executive Leadership</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { label: 'Women', value: insights.demographics.executives.women, color: '#EC4899' },
+                  { label: 'White', value: insights.demographics.executives.white, color: '#6B7280' },
+                  { label: 'Asian', value: insights.demographics.executives.asian, color: '#8B5CF6' },
+                  { label: 'Black/Latino', value: insights.demographics.executives.black_latino, color: '#3B82F6' }
+                ].map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ minWidth: '100px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                      {item.label}
+                    </div>
+                    <div style={{ flex: 1, height: '8px', backgroundColor: 'var(--bg-lighter)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div 
+                        style={{ 
+                          height: '100%', 
+                          width: `${item.value}%`, 
+                          backgroundColor: item.color,
+                          borderRadius: '4px'
+                        }}
+                      />
+                    </div>
+                    <div style={{ minWidth: '45px', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'right' }}>
+                      {item.value}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="dei-details">
         <div className="detail-item">
           <span className="detail-label">Sponsorship History:</span>

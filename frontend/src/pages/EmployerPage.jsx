@@ -56,8 +56,9 @@ function EmployerPage() {
   }
 
   const handleRewrite = async (textToRewrite = null) => {
-    const text = textToRewrite || jobText
-    if (!text) return
+    // Ensure textToRewrite is a string, not an event object or other non-string value
+    const text = (typeof textToRewrite === 'string' ? textToRewrite : null) || jobText
+    if (!text || typeof text !== 'string') return
 
     setLoading(true)
     setError(null)

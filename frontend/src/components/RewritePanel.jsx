@@ -350,7 +350,10 @@ function RewritePanel({
           <button className="rewrite-btn secondary" onClick={() => setShowModal(true)}>
             View Full Comparison
           </button>
-          <button className="rewrite-btn primary" onClick={onRewrite}>
+          <button className="rewrite-btn primary" onClick={(e) => {
+            e.preventDefault()
+            onRewrite()
+          }}>
             Regenerate
           </button>
         </div>
@@ -457,7 +460,10 @@ function RewritePanel({
               <button className="modal-btn secondary" onClick={() => setShowModal(false)}>
                 Close
               </button>
-              <button className="modal-btn primary" onClick={onRewrite}>
+              <button className="modal-btn primary" onClick={(e) => {
+                e.preventDefault()
+                onRewrite()
+              }}>
                 Regenerate Rewrite
               </button>
             </div>

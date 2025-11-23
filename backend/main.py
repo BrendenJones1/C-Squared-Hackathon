@@ -42,7 +42,9 @@ app.add_middleware(
 
 class TextInput(BaseModel):
     text: str
-    use_nlp: Optional[bool] = False  # Optional NLP for faster analysis
+    # Default to True so MNLI-based NLP is active unless explicitly disabled.
+    # This guarantees NLP runs even if frontend requests omit the flag.
+    use_nlp: bool = True
 
 
 class URLInput(BaseModel):
@@ -95,10 +97,9 @@ async def analyze_classifier(input: TextInput):
 async def analyze_full_bias(input: TextInput):
     """Complete bias analysis with keywords and classification (fast mode by default)"""
     try:
-        # Default to False for speed - keyword analysis is fast and accurate
-        # NLP is slow (30-60s first load, 2-5s per request) so we make it optional
-        use_nlp = input.use_nlp if hasattr(input, 'use_nlp') else False
-        result = analyze_full(input.text, use_nlp=use_nlp)
+        # MNLI-based NLP is enabled by default (use_nlp=True in the model),
+        # but can still be turned off explicitly by sending use_nlp=false.
+        result = analyze_full(input.text, use_nlp=bool(input.use_nlp))
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

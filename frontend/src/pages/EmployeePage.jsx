@@ -35,7 +35,9 @@ function EmployeePage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text }),
+        // Enable MNLI-based NLP for the employee analysis view as well,
+        // so subtle bias beyond the lookup table is visible in the UI.
+        body: JSON.stringify({ text, use_nlp: true }),
         signal: controller.signal,
       })
       

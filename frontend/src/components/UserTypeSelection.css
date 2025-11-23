@@ -1,0 +1,104 @@
+.user-type-selection {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+}
+
+.selection-container {
+  max-width: 800px;
+  width: 100%;
+  text-align: center;
+}
+
+.selection-title {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--simplify-blue) 0%, var(--purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.selection-subtitle {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin-bottom: 48px;
+}
+
+.selection-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.selection-card {
+  background: var(--bg-white);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 40px 32px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  box-shadow: var(--shadow-md);
+}
+
+.selection-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--simplify-blue);
+}
+
+.employee-card:hover {
+  border-color: var(--simplify-blue);
+  background: linear-gradient(135deg, var(--simplify-blue-light) 0%, var(--bg-white) 100%);
+}
+
+.jobseeker-card:hover {
+  border-color: var(--purple);
+  background: linear-gradient(135deg, var(--purple-light) 0%, var(--bg-white) 100%);
+}
+
+.card-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.card-description {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .selection-title {
+    font-size: 36px;
+  }
+  
+  .selection-subtitle {
+    font-size: 16px;
+    margin-bottom: 32px;
+  }
+  
+  .selection-cards {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .selection-card {
+    padding: 32px 24px;
+  }
+}
+

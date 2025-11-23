@@ -57,7 +57,7 @@ function SimplifyNav({ currentPage = 'jobs' }) {
           </button>
           <button 
             className="biaslens-btn"
-            onClick={() => navigate('/employee')}
+            onClick={() => navigate('/')}
           >
             BiasLens
           </button>

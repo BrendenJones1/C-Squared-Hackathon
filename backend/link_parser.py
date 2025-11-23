@@ -11,11 +11,16 @@ logger = logging.getLogger(__name__)
 
 # User agent to avoid being blocked
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.5',
-    'Accept-Encoding': 'gzip, deflate',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
     'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Cache-Control': 'max-age=0',
 }
 
 
@@ -54,6 +59,7 @@ def scrape_linkedin_job(url: str) -> Dict:
     try:
         logger.info(f"Attempting to scrape LinkedIn job: {url}")
         
+        # LinkedIn often requires authentication, so we'll try but provide helpful error
         # Extract job ID and construct direct view URL
         job_id = extract_job_id_from_linkedin_url(url)
         
@@ -63,9 +69,14 @@ def scrape_linkedin_job(url: str) -> Dict:
         else:
             direct_url = url
         
-        # Make request
-        response = requests.get(direct_url, headers=HEADERS, timeout=10)
-        response.raise_for_status()
+        # Make request with longer timeout
+        try:
+            response = requests.get(direct_url, headers=HEADERS, timeout=15, allow_redirects=True)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 401 or e.response.status_code == 403:
+                raise Exception("LinkedIn requires authentication. Please copy the job description text directly.")
+            raise
         
         soup = BeautifulSoup(response.text, 'lxml')
         
@@ -167,6 +178,10 @@ def scrape_linkedin_job(url: str) -> Dict:
             description = re.sub(r' {2,}', ' ', description)
             description = description.strip()
         
+        # Check if we got redirected to login page
+        if 'login' in response.url.lower() or 'authwall' in response.text.lower():
+            raise Exception("LinkedIn requires authentication to view this job posting. Please copy the job description text directly.")
+        
         # If we got at least title or description, return results
         if title or description:
             logger.info(f"Successfully scraped job: {title} at {company}")
@@ -193,8 +208,8 @@ def scrape_linkedin_job(url: str) -> Dict:
                 "message": f"Successfully extracted job posting from {urlparse(url).netloc}"
             }
         else:
-            logger.warning(f"Could not extract job data from LinkedIn page")
-            raise Exception("Could not extract job information from page")
+            logger.warning(f"Could not extract job data from LinkedIn page - may require authentication")
+            raise Exception("Could not extract job information from LinkedIn. The page may require login or use JavaScript rendering. Please copy the job description text directly.")
             
     except requests.exceptions.RequestException as e:
         logger.error(f"Request error scraping LinkedIn: {e}")
@@ -326,8 +341,44 @@ def parse_job_link(url: str) -> Dict:
                     "raw_text": f"{title or 'Job Posting'}\n\n{description or 'Job description extracted from page.'}"
                 }
         
+        # If all scraping attempts fail, try one more generic extraction
+        try:
+            logger.info(f"Attempting generic text extraction from: {url}")
+            response = requests.get(url, headers=HEADERS, timeout=15, allow_redirects=True)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.text, 'lxml')
+            
+            # Remove script and style elements
+            for script in soup(["script", "style", "nav", "header", "footer"]):
+                script.decompose()
+            
+            # Try to get main content
+            main_content = soup.find('main') or soup.find('article') or soup.find('body')
+            if main_content:
+                text = main_content.get_text(separator='\n', strip=True)
+                # Clean up text
+                text = re.sub(r'\n{3,}', '\n\n', text)
+                text = re.sub(r' {2,}', ' ', text)
+                
+                # If we got substantial text (more than 200 chars), return it
+                if len(text) > 200:
+                    return {
+                        "success": True,
+                        "url": url,
+                        "job_title": "Job Posting",
+                        "company": "Company",
+                        "description": text[:5000],  # Limit to 5000 chars
+                        "location": "Location not specified",
+                        "type": "Full-Time",
+                        "raw_text": text[:5000],
+                        "message": f"Extracted text content from {urlparse(url).netloc}. Some formatting may be lost."
+                    }
+        except Exception as e:
+            logger.warning(f"Generic extraction also failed: {e}")
+        
         # If all scraping attempts fail, return error
-        raise Exception("Could not scrape job posting from URL. The site may require authentication or use JavaScript rendering.")
+        raise Exception("Could not scrape job posting from URL. The site may require authentication, use JavaScript rendering, or block automated access. Please copy the job description text directly.")
         
     except requests.exceptions.Timeout:
         logger.error(f"Timeout scraping {url}")

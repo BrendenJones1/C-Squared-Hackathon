@@ -4,8 +4,84 @@ import './RewritePanel.css'
 function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
   const [showModal, setShowModal] = useState(false)
   const [viewMode, setViewMode] = useState('rewritten') // 'original', 'rewritten'
+  const [acceptedChanges, setAcceptedChanges] = useState(new Set())
+  const [rejectedChanges, setRejectedChanges] = useState(new Set())
+  const [finalText, setFinalText] = useState(rewrite?.rewritten_text || '')
 
-  // Highlight biased words in original text
+  // Get bias category info for a match
+  const getBiasCategoryInfo = (match) => {
+    const matchLower = match.toLowerCase()
+    
+    // Gender bias
+    if (matchLower.includes('rockstar') || matchLower.includes('ninja') || matchLower.includes('guru') ||
+        matchLower.includes('aggressive') || matchLower.includes('male') || matchLower.includes('men')) {
+      return {
+        category: 'gender',
+        className: 'bias-gender',
+        tooltip: 'Gender-biased language: This term may discourage applicants of certain genders or reinforce stereotypes.'
+      }
+    }
+    
+    // Age bias
+    if (matchLower.includes('young') || matchLower.includes('energetic') || matchLower.includes('digital native') ||
+        matchLower.includes('under') || matchLower.includes('millennial') || matchLower.includes('gen z')) {
+      return {
+        category: 'age',
+        className: 'bias-age',
+        tooltip: 'Age-biased language: This term may exclude older candidates or create age-based assumptions.'
+      }
+    }
+    
+    // Exclusionary language (visa, citizenship, language)
+    if (matchLower.includes('native') || matchLower.includes('citizen') || matchLower.includes('visa') ||
+        matchLower.includes('sponsorship') || matchLower.includes('eligible to work') || matchLower.includes('u.s.') ||
+        matchLower.includes('canadian') || matchLower.includes('local applicants')) {
+      return {
+        category: 'exclusionary',
+        className: 'bias-exclusionary',
+        tooltip: 'Exclusionary language: This requirement may exclude qualified international candidates or those with different backgrounds.'
+      }
+    }
+    
+    // Disability bias
+    if (matchLower.includes('lift') || matchLower.includes('physical') || matchLower.includes('accommodation') ||
+        matchLower.includes('driver') || matchLower.includes('vehicle') || matchLower.includes('stand')) {
+      return {
+        category: 'disability',
+        className: 'bias-disability',
+        tooltip: 'Disability bias: This requirement may exclude candidates with disabilities unless it\'s essential for the role.'
+      }
+    }
+    
+    // Cultural fit
+    if (matchLower.includes('cultural fit') || matchLower.includes('fit the culture') || matchLower.includes('fit our culture') ||
+        matchLower.includes('work hard play hard') || matchLower.includes('after-work drinks')) {
+      return {
+        category: 'cultural',
+        className: 'bias-cultural',
+        tooltip: 'Cultural fit bias: Vague "cultural fit" requirements can exclude diverse candidates and perpetuate homogeneity.'
+      }
+    }
+    
+    // Appearance bias
+    if (matchLower.includes('tattoo') || matchLower.includes('piercing') || matchLower.includes('hairstyle') ||
+        matchLower.includes('appearance') || matchLower.includes('professional appearance')) {
+      return {
+        category: 'appearance',
+        className: 'bias-appearance',
+        tooltip: 'Appearance bias: These requirements may discriminate based on personal expression and are often unnecessary.'
+      }
+    }
+    
+    // Default
+    return {
+      category: 'general',
+      className: 'bias-general',
+      tooltip: 'Biased language detected: This phrase may exclude qualified candidates.'
+    }
+  }
+
+  // Highlight biased words in original text with category colors and tooltips
   const highlightBiasedWords = (text) => {
     if (!text || !keywordMatches || keywordMatches.length === 0) {
       return text
@@ -14,7 +90,7 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
     const allMatches = []
     const seenIndices = new Set()
     
-    // Collect all matches with their positions (avoid duplicates)
+    // Collect all matches with their positions and category info
     keywordMatches.forEach(category => {
       if (category && category.matches && Array.isArray(category.matches)) {
         category.matches.forEach(match => {
@@ -30,20 +106,23 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
           try {
             const regex = new RegExp(pattern, 'gi')
             let result
-            const textCopy = text // Create a copy to avoid regex issues
+            const textCopy = text
             while ((result = regex.exec(textCopy)) !== null) {
               const key = `${result.index}-${result.index + result[0].length}`
               if (!seenIndices.has(key)) {
                 seenIndices.add(key)
+                const categoryInfo = getBiasCategoryInfo(result[0])
                 allMatches.push({
                   text: result[0],
                   index: result.index,
-                  length: result[0].length
+                  length: result[0].length,
+                  category: categoryInfo.category,
+                  className: categoryInfo.className,
+                  tooltip: categoryInfo.tooltip
                 })
               }
             }
           } catch (e) {
-            // Skip invalid regex patterns
             console.warn('Invalid regex pattern:', pattern, e)
           }
         })
@@ -53,13 +132,14 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
     // Sort by index (reverse order) to avoid index shifting
     allMatches.sort((a, b) => b.index - a.index)
 
-    // Apply highlights from end to start
+    // Apply highlights from end to start with category-specific styling
     let highlighted = text
     allMatches.forEach(match => {
       const before = highlighted.substring(0, match.index)
       const matched = highlighted.substring(match.index, match.index + match.length)
       const after = highlighted.substring(match.index + match.length)
-      highlighted = `${before}<mark class="biased-word" title="Biased language detected">${matched}</mark>${after}`
+      const escapedTooltip = match.tooltip.replace(/"/g, '&quot;')
+      highlighted = `${before}<mark class="biased-word ${match.className}" data-category="${match.category}" title="${escapedTooltip}">${matched}</mark>${after}`
     })
 
     return highlighted
@@ -117,6 +197,30 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
   const highlightedOriginal = useMemo(() => highlightBiasedWords(original), [original, keywordMatches])
   const highlightedRewritten = useMemo(() => highlightChanges(original, rewrite.rewritten_text), [original, rewrite.rewritten_text])
 
+  // Handle accept/reject suggestions
+  const handleAcceptChange = (changeIndex) => {
+    setAcceptedChanges(prev => new Set([...prev, changeIndex]))
+    setRejectedChanges(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(changeIndex)
+      return newSet
+    })
+  }
+
+  const handleRejectChange = (changeIndex) => {
+    setRejectedChanges(prev => new Set([...prev, changeIndex]))
+    setAcceptedChanges(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(changeIndex)
+      return newSet
+    })
+  }
+
+  const copyFinalText = () => {
+    navigator.clipboard.writeText(finalText || rewrite.rewritten_text)
+    alert('Copied to clipboard!')
+  }
+
   // Get preview text (first 200 chars)
   const previewText = rewrite.rewritten_text.substring(0, 200) + (rewrite.rewritten_text.length > 200 ? '...' : '')
 
@@ -133,6 +237,7 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
               className="compare-btn"
               onClick={() => setShowModal(true)}
               title="View side-by-side comparison"
+              aria-label="View side-by-side comparison"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M2 2H7V7H2V2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -179,23 +284,63 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
           <div className="changes-section">
             <h4 className="changes-title">
               <span className="changes-icon">✨</span>
-              Key Changes ({rewrite.changes.length})
+              Suggested Changes ({rewrite.changes.length})
             </h4>
-            <div className="changes-grid">
-              {rewrite.changes.slice(0, 3).map((change, index) => (
-                <div key={index} className="change-badge">
-                  {change}
-                </div>
-              ))}
-              {rewrite.changes.length > 3 && (
-                <button 
-                  className="view-all-changes-btn"
-                  onClick={() => setShowModal(true)}
-                >
-                  +{rewrite.changes.length - 3} more
-                </button>
-              )}
+            <div className="suggestions-list">
+              {rewrite.changes.map((change, index) => {
+                const isAccepted = acceptedChanges.has(index)
+                const isRejected = rejectedChanges.has(index)
+                return (
+                  <div 
+                    key={index} 
+                    className={`suggestion-item ${isAccepted ? 'accepted' : ''} ${isRejected ? 'rejected' : ''}`}
+                  >
+                    <div className="suggestion-text">{change}</div>
+                    <div className="suggestion-actions">
+                      <button
+                        className={`suggestion-btn accept-btn ${isAccepted ? 'active' : ''}`}
+                        onClick={() => handleAcceptChange(index)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            handleAcceptChange(index)
+                          }
+                        }}
+                        title="Accept this change"
+                        aria-label={`Accept change: ${change}`}
+                        aria-pressed={isAccepted}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        className={`suggestion-btn reject-btn ${isRejected ? 'active' : ''}`}
+                        onClick={() => handleRejectChange(index)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            handleRejectChange(index)
+                          }
+                        }}
+                        title="Reject this change"
+                        aria-label={`Reject change: ${change}`}
+                        aria-pressed={isRejected}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
+            {rewrite.changes.length > 3 && (
+              <button 
+                className="view-all-changes-btn"
+                onClick={() => setShowModal(true)}
+                style={{ marginTop: '12px' }}
+              >
+                View Full Comparison
+              </button>
+            )}
           </div>
         )}
 
@@ -203,7 +348,19 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
           <button className="rewrite-btn secondary" onClick={() => setShowModal(true)}>
             View Full Comparison
           </button>
-          <button className="rewrite-btn primary" onClick={onRewrite}>
+          <button 
+            className="rewrite-btn copy-btn" 
+            onClick={copyFinalText} 
+            title="Copy final text"
+            aria-label="Copy rewritten text to clipboard"
+          >
+            Copy Text
+          </button>
+          <button 
+            className="rewrite-btn primary" 
+            onClick={onRewrite}
+            aria-label="Regenerate inclusive rewrite"
+          >
             Regenerate
           </button>
         </div>

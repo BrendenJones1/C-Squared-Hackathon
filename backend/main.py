@@ -107,12 +107,37 @@ async def company_insights(input: CompanyInput):
 
 @app.post("/parse-link")
 async def parse_link(input: URLInput):
-    """Parse job posting from URL (mock implementation)"""
+    """Parse job posting from URL"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
+        logger.info(f"Parsing job link: {input.url}")
         result = parse_job_link(input.url)
-        return result
+        
+        # Check if parsing was successful
+        if result.get("success", False):
+            return result
+        else:
+            # Return error response but don't raise exception
+            error_msg = result.get("error", "Could not parse job posting from URL")
+            logger.warning(f"Link parsing failed: {error_msg}")
+            return {
+                "success": False,
+                "url": input.url,
+                "error": error_msg,
+                "raw_text": None,
+                "message": error_msg
+            }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in parse-link endpoint: {e}")
+        return {
+            "success": False,
+            "url": input.url,
+            "error": f"Could not parse job posting: {str(e)}",
+            "raw_text": None,
+            "message": f"Error parsing URL: {str(e)}. Please try pasting the job description text directly."
+        }
 
 
 if __name__ == "__main__":

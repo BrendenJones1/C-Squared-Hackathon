@@ -44,12 +44,16 @@ function JobInput({ onAnalyze, onParseLink, loading, initialText }) {
         <button
           className={`mode-btn ${inputMode === 'text' ? 'active' : ''}`}
           onClick={() => setInputMode('text')}
+          aria-label="Switch to text input mode"
+          aria-pressed={inputMode === 'text'}
         >
           Paste Text
         </button>
         <button
           className={`mode-btn ${inputMode === 'link' ? 'active' : ''}`}
           onClick={() => setInputMode('link')}
+          aria-label="Switch to URL input mode"
+          aria-pressed={inputMode === 'link'}
         >
           Paste Link
         </button>
@@ -80,6 +84,7 @@ function JobInput({ onAnalyze, onParseLink, loading, initialText }) {
           type="submit"
           className="analyze-btn"
           disabled={loading || analyzing || (inputMode === 'text' && !text.trim()) || (inputMode === 'link' && !url.trim())}
+          aria-label="Analyze job posting for bias"
         >
           {analyzing ? (
             <>
@@ -100,9 +105,15 @@ function JobInput({ onAnalyze, onParseLink, loading, initialText }) {
             </p>
           )}
           {linkSuccess === false && (
-            <p className="link-error">
-              ⚠️ Could not extract job posting. Try pasting the text directly.
-            </p>
+            <div className="link-error">
+              <p style={{ marginBottom: '8px' }}>
+                ⚠️ Could not extract job posting automatically.
+              </p>
+              <p style={{ fontSize: '12px', marginTop: '4px' }}>
+                Many job sites (like LinkedIn) require login or use JavaScript that prevents automatic extraction. 
+                Please copy and paste the job description text directly into the text area above.
+              </p>
+            </div>
           )}
           {linkSuccess === null && (
             <>

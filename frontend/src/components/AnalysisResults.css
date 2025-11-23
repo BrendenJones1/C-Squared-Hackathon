@@ -5,6 +5,43 @@
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-lg);
   animation: fadeIn 0.4s ease-out;
+  position: relative;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.export-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.export-btn:hover {
+  background-color: var(--simplify-blue-light);
+  border-color: var(--simplify-blue);
+  color: var(--simplify-blue);
+  transform: translateY(-1px);
+}
+
+.export-btn:active {
+  transform: translateY(0);
+}
+
+.export-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 @keyframes fadeIn {
@@ -271,6 +308,21 @@
   flex: 1;
 }
 
+.help-icon {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  cursor: help;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.help-icon:hover {
+  opacity: 1;
+  color: var(--simplify-blue);
+}
+
 .breakdown-label {
   font-size: 14px;
   color: var(--text-primary);
@@ -495,6 +547,63 @@
   background: rgba(255, 255, 255, 0.6);
   border-radius: var(--radius-sm);
   border-left: 3px solid var(--simplify-blue);
+}
+
+@media (max-width: 768px) {
+  .analysis-results-card {
+    padding: 20px 16px;
+  }
+
+  .card-title {
+    font-size: 20px;
+  }
+
+  .scores-section {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .score-card {
+    padding: 20px;
+  }
+
+  .export-buttons {
+    position: absolute;
+    top: 20px;
+    right: 16px;
+  }
+
+  .export-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .breakdown-items {
+    gap: 12px;
+  }
+
+  .breakdown-item {
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .analysis-results-card {
+    padding: 16px 12px;
+  }
+
+  .card-title {
+    font-size: 18px;
+  }
+
+  .export-buttons {
+    top: 16px;
+    right: 12px;
+  }
+
+  .score-card {
+    padding: 16px;
+  }
 }
 
 .flag-expand-btn {

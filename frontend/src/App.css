@@ -53,7 +53,7 @@
 }
 
 .error-message {
-  background: linear-gradient(135deg, var(--error-red-light) 0%, #FEE2E2 100%);
+  background: linear-gradient(135deg, var(--error-red-light) 0%, rgba(254, 226, 226, 1) 100%);
   color: #991B1B;
   padding: 16px 20px;
   border-radius: var(--radius-lg);
@@ -64,6 +64,12 @@
   animation: slideIn 0.3s ease-out;
   box-shadow: var(--shadow-md);
   font-weight: 500;
+}
+
+[data-theme="dark"] .error-message {
+  background: linear-gradient(135deg, var(--error-red-light) 0%, rgba(127, 29, 29, 0.8) 100%);
+  color: #FCA5A5;
+  border-color: #991B1B;
 }
 
 .error-message::before {
@@ -96,11 +102,44 @@
 
 @media (max-width: 768px) {
   .main-content {
-    padding: 20px 16px;
+    padding: 16px 12px;
   }
   
   .content-layout {
-    gap: 20px;
+    gap: 16px;
   }
+
+  .error-message {
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 12px 8px;
+  }
+  
+  .content-layout {
+    gap: 12px;
+  }
+}
+
+/* Skip link for accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--simplify-blue);
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 1000;
+  border-radius: 0 0 4px 0;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  top: 0;
 }
 

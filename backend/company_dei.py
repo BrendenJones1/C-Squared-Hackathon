@@ -141,6 +141,34 @@ DEI_DATA = [
         "erg_available": False,
         "global_footprint": ["US"],
         "employee_sentiment": 3.0
+    },
+    {
+        "company": "Salesforce",
+        "inclusivity_score": 4.7,
+        "leadership_diversity": 4.6,
+        "international_friendly": 4.8,
+        "work_life_balance": 4.5,
+        "sponsorship_history": "Very Active",
+        "diversity_report": "https://www.salesforce.com/company/equality/",
+        "glassdoor_culture": 4.6,
+        "eeoc_certified": True,
+        "erg_available": True,
+        "global_footprint": ["US", "Canada", "UK", "Germany", "India", "Australia", "Japan", "Singapore", "Brazil", "France"],
+        "employee_sentiment": 4.7
+    },
+    {
+        "company": "Summit Ridge Enterprises",
+        "inclusivity_score": 1.8,
+        "leadership_diversity": 2.0,
+        "international_friendly": 1.5,
+        "work_life_balance": 2.5,
+        "sponsorship_history": "None",
+        "diversity_report": None,
+        "glassdoor_culture": 2.2,
+        "eeoc_certified": False,
+        "erg_available": False,
+        "global_footprint": ["Canada"],
+        "employee_sentiment": 2.3
     }
 ]
 

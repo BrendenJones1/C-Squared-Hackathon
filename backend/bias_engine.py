@@ -36,319 +36,75 @@ def get_classifier():
     return _classifier
 
 
-# Unified bias phrase dictionary: one source of truth for detection + rewriting
-# Each entry: phrase -> replacement + high-level category for analysis
-BIAS_PHRASES = {
-    # Gender-coded / "rockstar" language
-    "rockstar": {
-        "replacement": "high-performing professional",
-        "category": "masculine_coded",
-    },
-    "ninja": {
-        "replacement": "skilled professional",
-        "category": "masculine_coded",
-    },
-    "guru": {
-        "replacement": "subject matter expert",
-        "category": "masculine_coded",
-    },
-    "hustle": {
-        "replacement": "dedication",
-        "category": "masculine_coded",
-    },
-    "crush it": {
-        "replacement": "excel",
-        "category": "masculine_coded",
-    },
-    "aggressive": {
-        "replacement": "proactive and results-driven",
-        "category": "masculine_coded",
-    },
-    "dominant": {
-        "replacement": "strong leadership",
-        "category": "masculine_coded",
-    },
-    "forceful": {
-        "replacement": "persuasive",
-        "category": "masculine_coded",
-    },
-    "assertive personality": {
-        "replacement": "strong communication skills",
-        "category": "masculine_coded",
-    },
-    "leadership presence": {
-        "replacement": "leadership capabilities",
-        "category": "masculine_coded",
-    },
-    "male applicants preferred": {
-        "replacement": "",
-        "category": "masculine_coded",
-    },
-    "male preferred": {
-        "replacement": "",
-        "category": "masculine_coded",
-    },
-    "men preferred": {
-        "replacement": "",
-        "category": "masculine_coded",
-    },
+# Bias keyword lists - expanded for better detection
+MASCULINE_CODED = [
+    "aggressive", "assertive", "competitive", "decisive", "dominant", 
+    "driven", "forceful", "independent", "leader", "logical", "outspoken",
+    "rockstar", "ninja", "guru", "work hard play hard", "hustle", "crush it",
+    "male applicants preferred", "male preferred", "men preferred",
+    "leadership presence", "assertive personality", "alpha", "commanding",
+    "take charge", "strong-willed", "tough", "hard-charging"
+]
 
-    # Feminine-coded language (tracked for balance)
-    "nurturing": {
-        "replacement": "supportive",
-        "category": "feminine_coded",
-    },
-    "empathetic": {
-        "replacement": "empathetic",
-        "category": "feminine_coded",
-    },
-    "supportive": {
-        "replacement": "supportive",
-        "category": "feminine_coded",
-    },
-    "caring": {
-        "replacement": "thoughtful",
-        "category": "feminine_coded",
-    },
+FEMININE_CODED = [
+    # Note: Some of these are actually positive traits, but we track them for balance
+    "nurturing", "empathetic", "supportive", "caring", "sensitive",
+    "gentle", "warm", "compassionate"
+]
 
-    # Age bias
-    "digital native": {
-        "replacement": "comfortable with modern technology",
-        "category": "age_biased",
-    },
-    "young and energetic": {
-        "replacement": "enthusiastic and motivated",
-        "category": "age_biased",
-    },
-    "young team": {
-        "replacement": "dynamic and collaborative team",
-        "category": "age_biased",
-    },
-    "young professionals": {
-        "replacement": "talented professionals",
-        "category": "age_biased",
-    },
-    "recent graduate": {
-        "replacement": "early-career professional",
-        "category": "age_biased",
-    },
-    "recent college graduate": {
-        "replacement": "early-career professional",
-        "category": "age_biased",
-    },
-    "new graduate": {
-        "replacement": "early-career professional",
-        "category": "age_biased",
-    },
-    "fresh out of college": {
-        "replacement": "early-career professional",
-        "category": "age_biased",
-    },
-    "energetic team": {
-        "replacement": "motivated team",
-        "category": "age_biased",
-    },
-    "under 30": {
-        "replacement": "",
-        "category": "age_biased",
-    },
-    "under 25": {
-        "replacement": "",
-        "category": "age_biased",
-    },
+AGE_BIASED = [
+    "digital native", "young", "energetic", "fresh", "recent graduate",
+    "millennial", "gen z", "gen-z", "generation z", "junior", "entry-level only",
+    "under 30", "under 25", "under 35", "under 40", "young team",
+    "young professionals", "young and dynamic", "recent college graduate",
+    "new graduate", "fresh out of college", "energetic team", "fresh graduate",
+    "recently graduated", "college-aged", "recent grad"
+]
 
-    # Exclusionary / visa / citizenship language
-    "must be eligible to work in the u.s.": {
-        "replacement": "authorization to work in the U.S. required",
-        "category": "exclusionary_language",
-    },
-    "no work visa sponsorship": {
-        "replacement": "work authorization required",
-        "category": "exclusionary_language",
-    },
-    "no visa sponsorship": {
-        "replacement": "work authorization required",
-        "category": "exclusionary_language",
-    },
-    "no sponsorship": {
-        "replacement": "work authorization required",
-        "category": "exclusionary_language",
-    },
-    "native english speaker": {
-        "replacement": "excellent English communication skills",
-        "category": "exclusionary_language",
-    },
-    "native english speaker only": {
-        "replacement": "excellent English communication skills required",
-        "category": "exclusionary_language",
-    },
-    "native speaker required": {
-        "replacement": "excellent communication skills required",
-        "category": "exclusionary_language",
-    },
-    "native speaker only": {
-        "replacement": "excellent communication skills required",
-        "category": "exclusionary_language",
-    },
-    "strong north american communication": {
-        "replacement": "strong communication skills",
-        "category": "exclusionary_language",
-    },
-    "canadian citizens only": {
-        "replacement": "authorization to work in Canada required",
-        "category": "exclusionary_language",
-    },
-    "u.s. citizen only": {
-        "replacement": "authorization to work in the U.S. required",
-        "category": "exclusionary_language",
-    },
-    "us citizen only": {
-        "replacement": "authorization to work in the U.S. required",
-        "category": "exclusionary_language",
-    },
-    "no international students": {
-        "replacement": "",
-        "category": "exclusionary_language",
-    },
-    "no work-permit holders": {
-        "replacement": "",
-        "category": "exclusionary_language",
-    },
-    "citizens only": {
-        "replacement": "work authorization required",
-        "category": "exclusionary_language",
-    },
-    "local applicants only": {
-        "replacement": "",
-        "category": "exclusionary_language",
-    },
-    "no relocations": {
-        "replacement": "",
-        "category": "exclusionary_language",
-    },
-    "must be local": {
-        "replacement": "",
-        "category": "exclusionary_language",
-    },
-    "no remote": {
-        "replacement": "hybrid or on-site work available",
-        "category": "exclusionary_language",
-    },
+EXCLUSIONARY_LANGUAGE = [
+    "must be eligible to work in the u.s.", "must be eligible to work in the us",
+    "no work visa sponsorship", "no visa sponsorship", "no sponsorship",
+    "native english speaker", "native speaker required", "native speaker only",
+    "native english speaker only", "native english speaker required",
+    "strong north american communication", "north american communication style",
+    "must have work experience in canadian", "must have work experience in american",
+    "canadian work experience", "american work experience", "us work experience",
+    "local experience required", "u.s. citizen only", "us citizen only",
+    "must be authorized to work in the united states", "canadian citizens only",
+    "no international students", "no work-permit holders", "citizens only",
+    "local applicants only", "no relocations", "must be local",
+    "no remote", "on-site only", "must relocate", "u.s. work authorization required",
+    "must be legally authorized to work", "must be authorized to work in us",
+    "must be authorized to work in u.s.", "work authorization in us required",
+    "eligible to work in the united states", "eligible to work in us"
+]
 
-    # Cultural fit / toxicity clichés
-    "work hard play hard": {
-        "replacement": "collaborative and supportive work environment",
-        "category": "cultural_fit",
-    },
-    "work hard, play hard": {
-        "replacement": "collaborative and supportive work environment",
-        "category": "cultural_fit",
-    },
-    "cultural fit": {
-        "replacement": "strong team collaboration",
-        "category": "cultural_fit",
-    },
-    "fit the culture": {
-        "replacement": "collaborate effectively with our team",
-        "category": "cultural_fit",
-    },
-    "fit our culture": {
-        "replacement": "collaborate effectively with our team",
-        "category": "cultural_fit",
-    },
-    "beer fridays": {
-        "replacement": "regular team social events",
-        "category": "cultural_fit",
-    },
-    "after-work drinks": {
-        "replacement": "team social events",
-        "category": "cultural_fit",
-    },
-    "startup culture": {
-        "replacement": "dynamic and innovative environment",
-        "category": "cultural_fit",
-    },
-    "fast-paced environment": {
-        "replacement": "dynamic and fast-paced environment",
-        "category": "cultural_fit",
-    },
-    "like a family": {
-        "replacement": "supportive team environment",
-        "category": "cultural_fit",
-    },
-    "go-getter": {
-        "replacement": "proactive professional",
-        "category": "cultural_fit",
-    },
-    "self-starter": {
-        "replacement": "independent and proactive",
-        "category": "cultural_fit",
-    },
-    "team player": {
-        "replacement": "collaborative team member",
-        "category": "cultural_fit",
-    },
+CULTURAL_FIT_CLICHES = [
+    "cultural fit", "work hard play hard", "beer fridays", "startup culture",
+    "fast-paced environment", "like a family", "fit the culture",
+    "fit our culture", "after-work drinks", "social team", "traditional workplace",
+    "traditional culture", "team player", "go-getter", "self-starter",
+    "drinking culture", "happy hour", "work hard, play hard", "party culture",
+    "bro culture", "fraternity culture"
+]
 
-    # Disability / physical requirements
-    "must be able to lift": {
-        "replacement": "",
-        "category": "disability_biased",
-    },
-    "must be able to stand": {
-        "replacement": "",
-        "category": "disability_biased",
-    },
-    "physical requirements": {
-        "replacement": "",
-        "category": "disability_biased",
-    },
-    "able-bodied": {
-        "replacement": "",
-        "category": "disability_biased",
-    },
-    "without accommodation": {
-        "replacement": "with reasonable accommodations as needed",
-        "category": "disability_biased",
-    },
-    "no accommodation": {
-        "replacement": "reasonable accommodations available",
-        "category": "disability_biased",
-    },
-    "must have valid driver's license": {
-        "replacement": "valid driver's license preferred (if travel is required)",
-        "category": "disability_biased",
-    },
-    "personal vehicle required": {
-        "replacement": "access to transportation preferred (if travel is required)",
-        "category": "disability_biased",
-    },
+DISABILITY_BIASED = [
+    "must be able to lift", "must be able to stand", "physical requirements",
+    "must be able to travel", "able-bodied", "without accommodation",
+    "no accommodation", "must have valid driver's license", "personal vehicle required",
+    "must have car", "must drive", "driver's license required",
+    "must be able to work long hours", "work long hours without accommodation",
+    "must be physically fit", "physical fitness required", "able to lift heavy objects",
+    "must be able to stand for extended periods", "must be mobile", "no physical limitations"
+]
 
-    # Appearance
-    "professional appearance": {
-        "replacement": "professional demeanor",
-        "category": "appearance_biased",
-    },
-    "clean-cut appearance": {
-        "replacement": "professional demeanor",
-        "category": "appearance_biased",
-    },
-    "no visible tattoos": {
-        "replacement": "",
-        "category": "appearance_biased",
-    },
-    "no tattoos": {
-        "replacement": "",
-        "category": "appearance_biased",
-    },
-    "no visible piercings": {
-        "replacement": "",
-        "category": "appearance_biased",
-    },
-    "no piercings": {
-        "replacement": "",
-        "category": "appearance_biased",
-    },
-}
+APPEARANCE_BIASED = [
+    "professional appearance", "no visible tattoos", "no tattoos",
+    "no piercings", "no visible piercings", "conventional hairstyles",
+    "no unconventional hairstyles", "business professional", "clean-cut appearance",
+    "well-groomed", "professional dress", "appropriate appearance",
+    "conservative appearance", "professional image", "presentable appearance"
+]
 
 
 def detect_bias_keywords(text: str) -> Dict:
@@ -360,8 +116,7 @@ def detect_bias_keywords(text: str) -> Dict:
             "age_biased": {"count": 0, "matches": []},
             "exclusionary_language": {"count": 0, "matches": []},
             "cultural_fit": {"count": 0, "matches": []},
-            "disability_biased": {"count": 0, "matches": []},
-            "appearance_biased": {"count": 0, "matches": []},
+            "disability_biased": {"count": 0, "matches": []}
         }
     
     text_lower = text.lower()
@@ -399,23 +154,49 @@ def detect_bias_keywords(text: str) -> Dict:
         }
     }
     
-    # Unified phrase detection: one pass over the bias phrase dictionary
-    for phrase, meta in BIAS_PHRASES.items():
-        category = meta.get("category")
-        if category not in results:
-            continue
-
-        # Use word boundaries for single words, substring matching for phrases
-        if len(phrase.split()) == 1:
-            pattern = r'\b' + re.escape(phrase) + r'\b'
-            found = re.search(pattern, text_normalized, re.IGNORECASE)
+    # Check masculine coded - using word boundaries for better accuracy
+    for word in MASCULINE_CODED:
+        # Use word boundaries for single words, substring for phrases
+        if len(word.split()) == 1:
+            pattern = r'\b' + re.escape(word) + r'\b'
+            if re.search(pattern, text_normalized, re.IGNORECASE):
+                results["masculine_coded"]["count"] += 1
+                results["masculine_coded"]["matches"].append(word)
         else:
-            found = phrase in text_normalized
-
-        if found:
-            results[category]["count"] += 1
-            if phrase not in results[category]["matches"]:
-                results[category]["matches"].append(phrase)
+            if word in text_normalized:
+                results["masculine_coded"]["count"] += 1
+                results["masculine_coded"]["matches"].append(word)
+    
+    # Check feminine coded
+    for word in FEMININE_CODED:
+        pattern = r'\b' + re.escape(word) + r'\b'
+        if re.search(pattern, text_normalized, re.IGNORECASE):
+            results["feminine_coded"]["count"] += 1
+            results["feminine_coded"]["matches"].append(word)
+    
+    # Check age biased
+    for phrase in AGE_BIASED:
+        if phrase in text_normalized:
+            results["age_biased"]["count"] += 1
+            results["age_biased"]["matches"].append(phrase)
+    
+    # Check exclusionary language (case-insensitive phrase matching)
+    for phrase in EXCLUSIONARY_LANGUAGE:
+        if phrase in text_normalized:
+            results["exclusionary_language"]["count"] += 1
+            results["exclusionary_language"]["matches"].append(phrase)
+    
+    # Check cultural fit
+    for phrase in CULTURAL_FIT_CLICHES:
+        if phrase in text_normalized:
+            results["cultural_fit"]["count"] += 1
+            results["cultural_fit"]["matches"].append(phrase)
+    
+    # Check disability biased
+    for phrase in DISABILITY_BIASED:
+        if phrase in text_normalized:
+            results["disability_biased"]["count"] += 1
+            results["disability_biased"]["matches"].append(phrase)
     
     # Check appearance biased
     for phrase in APPEARANCE_BIASED:

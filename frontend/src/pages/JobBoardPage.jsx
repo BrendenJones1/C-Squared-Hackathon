@@ -350,7 +350,7 @@ function JobBoardPage() {
                     <rect x="4" y="7" width="8" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/>
                     <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
-                  <span>Unlock job analytics with Simplify+</span>
+                  <span>Unlock job analytics with BiasLens+</span>
                 </div>
 
                 <div className="company-info-section">

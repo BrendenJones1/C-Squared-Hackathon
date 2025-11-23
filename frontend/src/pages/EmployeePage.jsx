@@ -179,7 +179,7 @@ function EmployeePage() {
                   <path d="M2 11.5L8 15L14 11.5" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
                   <path d="M2 8.5L8 12L14 8.5" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
-                Browse Jobs on Simplify
+                Browse Jobs on BiasLens
               </button>
             </div>
             <JobInput

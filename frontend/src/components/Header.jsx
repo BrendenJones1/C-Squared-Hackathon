@@ -26,7 +26,7 @@ function Header() {
               <path d="M2 11.5L8 15L14 11.5" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round"/>
               <path d="M2 8.5L8 12L14 8.5" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
-            Simplify Job Board
+            BiasLens Job Board
           </Link>
           <a href="#" className="nav-item">About</a>
         </nav>

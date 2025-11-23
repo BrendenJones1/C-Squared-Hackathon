@@ -673,6 +673,9 @@ def analyze_full(text: str, use_nlp: bool = False) -> Dict:
     # Step 4: Generate red flags from real matches
     red_flags = generate_red_flags(keyword_results)
     
+    # Step 5: Create word-to-flag mapping for frontend highlighting
+    word_flag_mapping = get_word_flag_mapping(keyword_results, red_flags)
+    
     logger.info(f"Analysis complete - Bias Score: {bias_score}/100, Intl Score: {intl_score}/100, Inclusivity: {inclusivity_score['overall_inclusivity_score']}/100")
     
     return {
@@ -683,6 +686,7 @@ def analyze_full(text: str, use_nlp: bool = False) -> Dict:
         "keyword_analysis": keyword_results,
         "classification": classifier_results or {},
         "red_flags": red_flags,
+        "word_flag_mapping": word_flag_mapping,  # Map of words to their flag info
         "breakdown": {
             "visa_requirements": count_visa_issues(keyword_results),
             "language_bias": count_language_bias(keyword_results),
@@ -744,44 +748,61 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
     flags = []
     seen_flags = set()  # Avoid duplicates
     
+    # Helper function to get flag color based on category
+    def get_flag_color(category):
+        color_map = {
+            "Visa/Immigration Exclusion": "#dc2626",  # red
+            "Geographic Exclusion": "#dc2626",  # red
+            "Language Discrimination": "#ea580c",  # orange
+            "Gender Discrimination": "#db2777",  # pink
+            "Age Discrimination": "#7c3aed",  # purple
+            "Disability Discrimination": "#059669",  # green (for accessibility)
+            "Appearance Discrimination": "#0891b2",  # cyan
+            "Cultural Fit Bias": "#ca8a04",  # yellow
+        }
+        return color_map.get(category, "#dc2626")
+    
     exclusionary = keyword_results.get("exclusionary_language", {}).get("matches", [])
     
     for match in exclusionary:
         match_lower = match.lower()
         if ("no sponsorship" in match_lower or "visa" in match_lower or 
             "no international" in match_lower or "citizens only" in match_lower or
-            "no work-permit" in match_lower):
+            "no work-permit" in match_lower or "must have work authorization" in match_lower):
             flag_text = match
             if flag_text not in seen_flags:
                 flags.append({
                     "text": flag_text,
                     "severity": "high",
-                    "icon": "❗",
+                    "icon": "🚫",
                     "category": "Visa/Immigration Exclusion",
+                    "color": get_flag_color("Visa/Immigration Exclusion"),
                     "explanation": "This requirement explicitly excludes international candidates who may need visa sponsorship. This can be illegal in many jurisdictions and significantly reduces your talent pool.",
                     "suggestion": "Consider stating 'Visa sponsorship available for qualified candidates' or removing the restriction entirely if not legally required."
                 })
                 seen_flags.add(flag_text)
-        elif "native" in match_lower:
+        elif "native" in match_lower or "native speaker" in match_lower:
             flag_text = match
             if flag_text not in seen_flags:
                 flags.append({
                     "text": flag_text,
                     "severity": "high",
-                    "icon": "❗",
+                    "icon": "🌐",
                     "category": "Language Discrimination",
+                    "color": get_flag_color("Language Discrimination"),
                     "explanation": "Requiring 'native' language skills discriminates against qualified candidates who learned the language as a second language. This excludes many talented international candidates.",
                     "suggestion": "Replace with 'fluent in [language]' or 'professional proficiency in [language]' to focus on ability rather than origin."
                 })
                 seen_flags.add(flag_text)
-        elif "local applicants only" in match_lower or "no relocations" in match_lower:
+        elif "local applicants only" in match_lower or "no relocations" in match_lower or "local candidates only" in match_lower:
             flag_text = match
             if flag_text not in seen_flags:
                 flags.append({
                     "text": flag_text,
                     "severity": "high",
-                    "icon": "❗",
+                    "icon": "📍",
                     "category": "Geographic Exclusion",
+                    "color": get_flag_color("Geographic Exclusion"),
                     "explanation": "Geographic restrictions unnecessarily limit your candidate pool and may exclude highly qualified candidates willing to relocate.",
                     "suggestion": "If location is truly required, specify why (e.g., 'Must work on-site in [location]'). Otherwise, consider remote work options or relocation assistance."
                 })
@@ -789,16 +810,49 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
     
     # Check for explicit gender discrimination
     masculine_matches = keyword_results.get("masculine_coded", {}).get("matches", [])
+    feminine_matches = keyword_results.get("feminine_coded", {}).get("matches", [])
+    
     for match in masculine_matches:
-        if "male" in match.lower() or "men" in match.lower():
+        match_lower = match.lower()
+        if "male" in match_lower or "men" in match_lower:
             flag_text = match
             if flag_text not in seen_flags:
                 flags.append({
                     "text": flag_text,
                     "severity": "high",
-                    "icon": "❗",
+                    "icon": "⚧️",
                     "category": "Gender Discrimination",
+                    "color": get_flag_color("Gender Discrimination"),
                     "explanation": "Explicitly stating a gender preference is illegal in most jurisdictions and constitutes direct discrimination. This violates equal employment opportunity laws.",
+                    "suggestion": "Remove all gender-specific language. Focus on skills, qualifications, and competencies that are relevant to the role."
+                })
+                seen_flags.add(flag_text)
+        elif match_lower in ["rockstar", "ninja", "guru", "hustle", "crush it", "aggressive", "dominant", "forceful"]:
+            flag_text = match
+            if flag_text not in seen_flags:
+                flags.append({
+                    "text": flag_text,
+                    "severity": "medium",
+                    "icon": "⚧️",
+                    "category": "Gender Discrimination",
+                    "color": get_flag_color("Gender Discrimination"),
+                    "explanation": "Masculine-coded language can unconsciously bias hiring toward male candidates. Research shows these terms reduce applications from women.",
+                    "suggestion": "Use neutral, professional language that focuses on skills and competencies rather than personality traits."
+                })
+                seen_flags.add(flag_text)
+    
+    for match in feminine_matches:
+        match_lower = match.lower()
+        if "female" in match_lower or "women" in match_lower:
+            flag_text = match
+            if flag_text not in seen_flags:
+                flags.append({
+                    "text": flag_text,
+                    "severity": "high",
+                    "icon": "⚧️",
+                    "category": "Gender Discrimination",
+                    "color": get_flag_color("Gender Discrimination"),
+                    "explanation": "Explicitly stating a gender preference is illegal in most jurisdictions and constitutes direct discrimination.",
                     "suggestion": "Remove all gender-specific language. Focus on skills, qualifications, and competencies that are relevant to the role."
                 })
                 seen_flags.add(flag_text)
@@ -806,14 +860,16 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
     # Check for explicit age discrimination
     age_matches = keyword_results.get("age_biased", {}).get("matches", [])
     for match in age_matches:
-        if "under" in match.lower():
+        match_lower = match.lower()
+        if "under" in match_lower or "over" in match_lower or "years old" in match_lower or "age" in match_lower:
             flag_text = match
             if flag_text not in seen_flags:
                 flags.append({
                     "text": flag_text,
                     "severity": "high",
-                    "icon": "❗",
+                    "icon": "🎂",
                     "category": "Age Discrimination",
+                    "color": get_flag_color("Age Discrimination"),
                     "explanation": "Age restrictions are illegal in many countries (e.g., ADEA in the US protects workers 40+). This excludes experienced candidates and may violate employment law.",
                     "suggestion": "Remove age restrictions. If you need specific experience levels, state years of experience or skill requirements instead (e.g., '2-5 years of experience')."
                 })
@@ -822,14 +878,16 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
     # Check for disability discrimination
     disability_matches = keyword_results.get("disability_biased", {}).get("matches", [])
     for match in disability_matches:
-        if "without accommodation" in match.lower() or "no accommodation" in match.lower():
+        match_lower = match.lower()
+        if "without accommodation" in match_lower or "no accommodation" in match_lower or "able-bodied" in match_lower:
             flag_text = match
             if flag_text not in seen_flags:
                 flags.append({
                     "text": match,
                     "severity": "high",
-                    "icon": "❗",
+                    "icon": "♿",
                     "category": "Disability Discrimination",
+                    "color": get_flag_color("Disability Discrimination"),
                     "explanation": "Refusing to provide reasonable accommodations violates the ADA (US) and similar laws worldwide. This excludes qualified candidates with disabilities and may be illegal.",
                     "suggestion": "Remove accommodation refusals. Add 'We provide reasonable accommodations for qualified candidates with disabilities' to show inclusivity."
                 })
@@ -838,14 +896,16 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
     # Check for appearance discrimination
     appearance_matches = keyword_results.get("appearance_biased", {}).get("matches", [])
     for match in appearance_matches:
-        if "no visible" in match.lower() or "no tattoos" in match.lower() or "no piercings" in match.lower():
+        match_lower = match.lower()
+        if "no visible" in match_lower or "no tattoos" in match_lower or "no piercings" in match_lower or "no facial hair" in match_lower:
             flag_text = match
             if flag_text not in seen_flags:
                 flags.append({
                     "text": match,
                     "severity": "high",
-                    "icon": "❗",
+                    "icon": "👔",
                     "category": "Appearance Discrimination",
+                    "color": get_flag_color("Appearance Discrimination"),
                     "explanation": "Appearance restrictions based on tattoos, piercings, or hairstyles can discriminate against cultural and religious practices. These requirements are often unnecessary for job performance.",
                     "suggestion": "Remove appearance restrictions unless they're essential for safety (e.g., food service). Focus on professional presentation rather than specific appearance requirements."
                 })
@@ -854,18 +914,128 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
     # Cultural fit issues
     cultural_matches = keyword_results.get("cultural_fit", {}).get("matches", [])
     for match in cultural_matches:
-        if "fit the culture" in match.lower() or "fit our culture" in match.lower():
+        match_lower = match.lower()
+        if "fit the culture" in match_lower or "fit our culture" in match_lower or "cultural fit" in match_lower:
             flag_text = match
             if flag_text not in seen_flags:
                 flags.append({
                     "text": match,
                     "severity": "medium",
-                    "icon": "⚠️",
+                    "icon": "🤝",
                     "category": "Cultural Fit Bias",
+                    "color": get_flag_color("Cultural Fit Bias"),
                     "explanation": "Vague 'cultural fit' requirements can be used to exclude candidates from different backgrounds, cultures, or demographics. This often leads to unconscious bias in hiring.",
                     "suggestion": "Be specific about what you mean. Instead of 'cultural fit,' describe actual values (e.g., 'collaborative team player,' 'values diversity and inclusion')."
                 })
                 seen_flags.add(flag_text)
     
     return flags
+
+
+def get_word_flag_mapping(keyword_results: Dict, red_flags: List[Dict]) -> Dict[str, Dict]:
+    """Create a mapping from biased words/phrases to their flag information"""
+    word_to_flag = {}
+    
+    # Map exclusionary language
+    exclusionary = keyword_results.get("exclusionary_language", {}).get("matches", [])
+    for match in exclusionary:
+        match_lower = match.lower()
+        for flag in red_flags:
+            if flag["text"].lower() == match_lower or match_lower in flag["text"].lower() or flag["text"].lower() in match_lower:
+                word_to_flag[match] = flag
+                break
+    
+    # Map gender-related
+    masculine_matches = keyword_results.get("masculine_coded", {}).get("matches", [])
+    feminine_matches = keyword_results.get("feminine_coded", {}).get("matches", [])
+    for match in masculine_matches + feminine_matches:
+        for flag in red_flags:
+            if flag["category"] == "Gender Discrimination" and (match.lower() in flag["text"].lower() or flag["text"].lower() in match.lower()):
+                word_to_flag[match] = flag
+                break
+        # If no specific flag, create a generic one
+        if match not in word_to_flag:
+            word_to_flag[match] = {
+                "text": match,
+                "severity": "medium",
+                "icon": "⚧️",
+                "category": "Gender Discrimination",
+                "color": "#db2777",
+                "explanation": "This language may unconsciously bias hiring. Consider using more neutral alternatives.",
+                "suggestion": "Use neutral, professional language that focuses on skills and competencies."
+            }
+    
+    # Map age-related
+    age_matches = keyword_results.get("age_biased", {}).get("matches", [])
+    for match in age_matches:
+        for flag in red_flags:
+            if flag["category"] == "Age Discrimination" and (match.lower() in flag["text"].lower() or flag["text"].lower() in match.lower()):
+                word_to_flag[match] = flag
+                break
+        if match not in word_to_flag:
+            word_to_flag[match] = {
+                "text": match,
+                "severity": "high",
+                "icon": "🎂",
+                "category": "Age Discrimination",
+                "color": "#7c3aed",
+                "explanation": "Age-related language may exclude qualified candidates and could violate employment law.",
+                "suggestion": "Remove age restrictions. Focus on experience and skills instead."
+            }
+    
+    # Map disability-related
+    disability_matches = keyword_results.get("disability_biased", {}).get("matches", [])
+    for match in disability_matches:
+        for flag in red_flags:
+            if flag["category"] == "Disability Discrimination" and (match.lower() in flag["text"].lower() or flag["text"].lower() in match.lower()):
+                word_to_flag[match] = flag
+                break
+        if match not in word_to_flag:
+            word_to_flag[match] = {
+                "text": match,
+                "severity": "high",
+                "icon": "♿",
+                "category": "Disability Discrimination",
+                "color": "#059669",
+                "explanation": "This language may exclude qualified candidates with disabilities.",
+                "suggestion": "Focus on essential job functions rather than physical requirements."
+            }
+    
+    # Map appearance-related
+    appearance_matches = keyword_results.get("appearance_biased", {}).get("matches", [])
+    for match in appearance_matches:
+        for flag in red_flags:
+            if flag["category"] == "Appearance Discrimination" and (match.lower() in flag["text"].lower() or flag["text"].lower() in match.lower()):
+                word_to_flag[match] = flag
+                break
+        if match not in word_to_flag:
+            word_to_flag[match] = {
+                "text": match,
+                "severity": "high",
+                "icon": "👔",
+                "category": "Appearance Discrimination",
+                "color": "#0891b2",
+                "explanation": "Appearance restrictions may discriminate against cultural and religious practices.",
+                "suggestion": "Remove appearance restrictions unless essential for safety."
+            }
+    
+    # Map cultural fit
+    cultural_matches = keyword_results.get("cultural_fit", {}).get("matches", [])
+    for match in cultural_matches:
+        for flag in red_flags:
+            if flag["category"] == "Cultural Fit Bias" and (match.lower() in flag["text"].lower() or flag["text"].lower() in match.lower()):
+                word_to_flag[match] = flag
+                break
+        if match not in word_to_flag:
+            word_to_flag[match] = {
+                "text": match,
+                "severity": "medium",
+                "icon": "🤝",
+                "category": "Cultural Fit Bias",
+                "color": "#ca8a04",
+                "explanation": "Vague cultural fit requirements can lead to unconscious bias.",
+                "suggestion": "Be specific about values and behaviors you're seeking."
+            }
+    
+    return word_to_flag
 

@@ -14,7 +14,7 @@ function SimplifyNav({ currentPage = 'jobs' }) {
               <path d="M3 2C3 0 5 -1 8 -1C11 -1 13 1 13 3C13 5 11 6 8 6" stroke="#50B4D8" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
               <path d="M3 10C4 9 6 8 8 8C11 8 13 10 13 12C13 14 11 15 8 15" stroke="#50B4D8" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
             </svg>
-            <span className="logo-text">Simplify</span>
+            <span className="logo-text">BiasLens</span>
           </div>
           <nav className="nav-links">
             <Link to="/jobseeker/dashboard" className={`nav-link ${currentPage === 'dashboard' ? 'active' : ''}`}>

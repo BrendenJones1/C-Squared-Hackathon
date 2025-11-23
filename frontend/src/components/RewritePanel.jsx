@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import './RewritePanel.css'
 
-function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
+function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [], wordFlagMapping = {} }) {
   const [showModal, setShowModal] = useState(false)
   const [viewMode, setViewMode] = useState('rewritten') // 'original', 'rewritten'
   const [approvedChanges, setApprovedChanges] = useState(
@@ -65,31 +65,125 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
     })
   }
 
-  // Highlight biased words in original text
+  // Highlight biased words in original text with flag icons
   const highlightBiasedWords = (text) => {
     if (!text) return text
 
     let highlighted = text
 
-    // Primary: highlight original biased phrases based on rewrite change log
+    // Build a comprehensive list of all biased words/phrases with their flag info
+    const allBiasedWords = []
+    
+    // Add words from parsed changes (rewrite changes)
     if (parsedChanges.length > 0) {
-      parsedChanges.forEach(({ original }) => {
-        if (!original) return
-        const escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      parsedChanges.forEach(({ original: origPhrase }) => {
+        if (!origPhrase) return
+        const flagInfo = wordFlagMapping[origPhrase] || {
+          icon: "⚠️",
+          category: "Bias Detected",
+          color: "#dc2626",
+          explanation: "This phrase may contain biased language.",
+          severity: "medium"
+        }
+        allBiasedWords.push({
+          phrase: origPhrase,
+          flag: flagInfo
+        })
+      })
+    }
+
+    // Add words from keyword matches
+    if (keywordMatches && keywordMatches.length > 0) {
+      keywordMatches.forEach((category) => {
+        if (category && category.matches && Array.isArray(category.matches)) {
+          category.matches.forEach((match) => {
+            if (!match || typeof match !== 'string') return
+            const flagInfo = wordFlagMapping[match] || {
+              icon: "⚠️",
+              category: category.category || "Bias Detected",
+              color: "#dc2626",
+              explanation: "This phrase may contain biased language.",
+              severity: "medium"
+            }
+            allBiasedWords.push({
+              phrase: match,
+              flag: flagInfo
+            })
+          })
+        }
+      })
+    }
+
+    // If we have word flag mapping, use it to highlight all words
+    if (Object.keys(wordFlagMapping).length > 0) {
+      // Sort phrases by length (longest first) to avoid partial matches
+      const sortedPhrases = Object.entries(wordFlagMapping).sort((a, b) => b[0].length - a[0].length)
+      
+      sortedPhrases.forEach(([phrase, flagInfo]) => {
+        if (!phrase) return
+        const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         const pattern =
-          original.split(' ').length === 1
+          phrase.split(' ').length === 1
+            ? new RegExp(`\\b${escaped}\\b`, 'gi')
+            : new RegExp(escaped, 'gi')
+        
+        // Only replace if the match is not already inside HTML tags
+        highlighted = highlighted.replace(pattern, (match, offset) => {
+          // Check if we're inside an HTML tag
+          const beforeMatch = highlighted.substring(0, offset)
+          const afterMatch = highlighted.substring(offset + match.length)
+          
+          // Skip if already inside a mark tag
+          if (beforeMatch.includes('<mark') && !beforeMatch.substring(beforeMatch.lastIndexOf('<mark')).includes('</mark>')) {
+            return match
+          }
+          
+          const flagIcon = flagInfo.icon || "⚠️"
+          const flagColor = flagInfo.color || "#dc2626"
+          const flagCategory = flagInfo.category || "Bias Detected"
+          const flagExplanation = flagInfo.explanation || "This phrase may contain biased language."
+          const flagSuggestion = flagInfo.suggestion || ""
+          const severity = flagInfo.severity || "medium"
+          
+          return `<mark class="biased-word-original biased-word-flagged" 
+                    data-flag-icon="${flagIcon}" 
+                    data-flag-color="${flagColor}"
+                    data-flag-category="${flagCategory}"
+                    data-flag-explanation="${flagExplanation.replace(/"/g, '&quot;')}"
+                    data-flag-suggestion="${flagSuggestion.replace(/"/g, '&quot;')}"
+                    data-severity="${severity}"
+                    style="--flag-color: ${flagColor};"
+                    title="${flagCategory}: ${flagExplanation}">
+                    ${match}
+                    <span class="flag-icon-hover" style="background-color: ${flagColor};">${flagIcon}</span>
+                  </mark>`
+        })
+      })
+      return highlighted
+    }
+
+    // Fallback: highlight based on parsed changes
+    if (parsedChanges.length > 0) {
+      parsedChanges.forEach(({ original: origPhrase }) => {
+        if (!origPhrase) return
+        const escaped = origPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const pattern =
+          origPhrase.split(' ').length === 1
             ? new RegExp(`\\b${escaped}\\b`, 'gi')
             : new RegExp(escaped, 'gi')
         highlighted = highlighted.replace(
           pattern,
           (match) =>
-            `<mark class="biased-word-original" title="Original biased phrase">${match}</mark>`
+            `<mark class="biased-word-original" title="Original biased phrase">
+              ${match}
+              <span class="flag-icon-hover" style="background-color: #dc2626;">⚠️</span>
+            </mark>`
         )
       })
       return highlighted
     }
 
-    // Fallback: use keyword matches if no parsed changes are available
+    // Final fallback: use keyword matches
     if (!keywordMatches || keywordMatches.length === 0) {
       return text
     }
@@ -116,10 +210,16 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
               const key = `${result.index}-${result.index + result[0].length}`
               if (!seenIndices.has(key)) {
                 seenIndices.add(key)
+                const flagInfo = wordFlagMapping[match] || {
+                  icon: "⚠️",
+                  category: category.category || "Bias Detected",
+                  color: "#dc2626"
+                }
                 allMatches.push({
                   text: result[0],
                   index: result.index,
                   length: result[0].length,
+                  flag: flagInfo
                 })
               }
             }
@@ -139,7 +239,14 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
         match.index + match.length
       )
       const after = highlighted.substring(match.index + match.length)
-      highlighted = `${before}<mark class="biased-word-original" title="Biased language detected">${matched}</mark>${after}`
+      const flagIcon = match.flag?.icon || "⚠️"
+      const flagColor = match.flag?.color || "#dc2626"
+      highlighted = `${before}<mark class="biased-word-original biased-word-flagged" 
+                      style="--flag-color: ${flagColor};"
+                      title="${match.flag?.category || 'Biased language detected'}">
+                      ${matched}
+                      <span class="flag-icon-hover" style="background-color: ${flagColor};">${flagIcon}</span>
+                    </mark>${after}`
     })
 
     return highlighted

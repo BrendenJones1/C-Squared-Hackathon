@@ -7,6 +7,7 @@ import '../App.css'
 function EmployerPage() {
   const [jobText, setJobText] = useState('')
   const [rewriteResult, setRewriteResult] = useState(null)
+  const [analysisResults, setAnalysisResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -18,6 +19,22 @@ function EmployerPage() {
     }
 
     setJobText(text)
+    // Fetch analysis to get word flag mapping
+    try {
+      const analysisResponse = await fetch('http://localhost:8000/analyze/full', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      })
+      if (analysisResponse.ok) {
+        const analysisData = await analysisResponse.json()
+        setAnalysisResults(analysisData)
+      }
+    } catch (err) {
+      console.error('Failed to fetch analysis:', err)
+    }
     await handleRewrite(text)
   }
 
@@ -128,8 +145,8 @@ function EmployerPage() {
                 original={jobText}
                 rewrite={rewriteResult}
                 onRewrite={handleRewrite}
-                // Employer view focuses on replacements; we omit bias-category highlights here
-                keywordMatches={[]}
+                keywordMatches={analysisResults?.keyword_analysis ? Object.values(analysisResults.keyword_analysis).filter(cat => cat && cat.matches) : []}
+                wordFlagMapping={analysisResults?.word_flag_mapping || {}}
               />
             )}
           </div>

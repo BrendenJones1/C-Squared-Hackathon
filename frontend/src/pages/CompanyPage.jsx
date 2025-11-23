@@ -180,7 +180,7 @@ function CompanyPage() {
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M10 2L2 7l8 5 8-5-8-5z" stroke="currentColor" strokeWidth="2"/>
               </svg>
-              <h3 className="take-title">Simplify's Take</h3>
+              <h3 className="take-title">BiasLens's Take</h3>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
                 <path d="M6 8h4M8 6v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -198,7 +198,7 @@ function CompanyPage() {
 
           <div className="rating-section">
             <div className="rating-header">
-              <h3 className="rating-title">Simplify's Rating</h3>
+              <h3 className="rating-title">BiasLens's Rating</h3>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
                 <path d="M6 8h4M8 6v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>

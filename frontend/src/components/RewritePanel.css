@@ -175,6 +175,101 @@
   border-radius: 3px;
   font-weight: 600;
   cursor: help;
+  position: relative;
+}
+
+.preview-text mark.biased-word-flagged {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.preview-text mark.biased-word-flagged .flag-icon-hover {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 3px;
+  border-radius: 2px;
+  margin-left: 3px;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.2s ease;
+  vertical-align: middle;
+  line-height: 1;
+  color: white;
+  font-weight: normal;
+}
+
+.preview-text mark.biased-word-flagged:hover .flag-icon-hover {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.preview-text mark.biased-word-flagged:hover {
+  background-color: var(--flag-color, #fee2e2);
+  box-shadow: 0 0 0 2px var(--flag-color, #dc2626);
+}
+
+.preview-text mark.biased-word-flagged::after {
+  content: attr(data-flag-category);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background-color: var(--flag-color, #dc2626);
+  color: white;
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 1000;
+  font-weight: 500;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.preview-text mark.biased-word-flagged::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-2px);
+  border: 4px solid transparent;
+  border-top-color: var(--flag-color, #dc2626);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1001;
+}
+
+.preview-text mark.biased-word-flagged:hover::after,
+.preview-text mark.biased-word-flagged:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-10px);
+}
+
+.preview-text mark.biased-word-flagged:hover::before {
+  transform: translateX(-50%) translateY(-2px);
+}
+
+/* Dark mode support for flag icons */
+[data-theme="dark"] .text-body mark.biased-word-flagged,
+[data-theme="dark"] .preview-text mark.biased-word-flagged {
+  background-color: rgba(220, 38, 38, 0.2);
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .text-body mark.biased-word-flagged:hover,
+[data-theme="dark"] .preview-text mark.biased-word-flagged:hover {
+  background-color: var(--flag-color, rgba(220, 38, 38, 0.3));
+  box-shadow: 0 0 0 2px var(--flag-color, #dc2626);
+}
+
+[data-theme="dark"] .text-body mark.biased-word-flagged::after,
+[data-theme="dark"] .preview-text mark.biased-word-flagged::after {
+  background-color: var(--flag-color, #dc2626);
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .preview-text mark.changed-word,
@@ -370,6 +465,83 @@
   border-radius: 3px;
   font-weight: 600;
   cursor: help;
+  position: relative;
+}
+
+/* Flag icon that appears on hover */
+.text-body mark.biased-word-flagged {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.text-body mark.biased-word-flagged .flag-icon-hover {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.2s ease;
+  vertical-align: middle;
+  line-height: 1;
+  color: white;
+  font-weight: normal;
+}
+
+.text-body mark.biased-word-flagged:hover .flag-icon-hover {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.text-body mark.biased-word-flagged:hover {
+  background-color: var(--flag-color, #fee2e2);
+  box-shadow: 0 0 0 2px var(--flag-color, #dc2626);
+}
+
+/* Tooltip for flag details */
+.text-body mark.biased-word-flagged::after {
+  content: attr(data-flag-category);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background-color: var(--flag-color, #dc2626);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 1000;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.text-body mark.biased-word-flagged::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-2px);
+  border: 5px solid transparent;
+  border-top-color: var(--flag-color, #dc2626);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1001;
+}
+
+.text-body mark.biased-word-flagged:hover::after,
+.text-body mark.biased-word-flagged:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-12px);
+}
+
+.text-body mark.biased-word-flagged:hover::before {
+  transform: translateX(-50%) translateY(-2px);
 }
 
 .text-body mark.changed-word,
@@ -597,7 +769,6 @@
 .change-approve-toggle:hover {
   background-color: var(--hover-bg);
   color: var(--text-primary);
-}
 }
 
 .modal-footer {

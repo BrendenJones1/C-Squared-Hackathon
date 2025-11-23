@@ -170,6 +170,7 @@ function EmployerPage() {
                     ? Object.values(analysisResults.keyword_analysis)
                     : []
                 }
+                sentenceInsights={analysisResults?.sentence_insights || []}
               />
             )}
           </div>

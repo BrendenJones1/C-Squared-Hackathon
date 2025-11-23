@@ -2,7 +2,15 @@ import React, { useState } from 'react'
 import './AnalysisResults.css'
 
 function AnalysisResults({ results }) {
-  const { bias_score, international_student_bias_score, inclusivity_score, red_flags, breakdown } = results
+  const { 
+    bias_score, 
+    international_student_bias_score, 
+    inclusivity_score, 
+    red_flags, 
+    breakdown,
+    classification,
+    sentence_insights = []
+  } = results
   const [expandedCategories, setExpandedCategories] = useState({})
   const [expandedFlags, setExpandedFlags] = useState({})
 
@@ -39,6 +47,25 @@ function AnalysisResults({ results }) {
       [key]: !prev[key]
     }))
   }
+
+  const classificationLabelMap = {
+    'gender-bias': 'Gender bias',
+    'age-bias': 'Age bias',
+    'culture-fit-bias': 'Culture fit bias',
+    'exclusionary-language': 'Exclusionary language',
+    'disability-bias': 'Disability bias',
+    neutral: 'Neutral / inclusive'
+  }
+
+  const formatClassificationLabel = (label) => {
+    if (!label) return 'Unknown'
+    return classificationLabelMap[label] || label.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  }
+
+  const topLabel = classification?.labels?.[0]
+  const topScore = classification?.scores?.[0]
+  const classifierConfidence = typeof topScore === 'number' ? Math.round(topScore * 100) : null
+  const hasSentenceInsights = Array.isArray(sentence_insights) && sentence_insights.length > 0
 
   // Map red flag categories to breakdown categories
   const getFlagsForCategory = (category) => {
@@ -580,6 +607,69 @@ function AnalysisResults({ results }) {
               <div className="breakdown-item">
                 <span className="breakdown-label">Other Exclusionary Terms:</span>
                 <span className="breakdown-count">{breakdown.other_exclusionary} {breakdown.other_exclusionary === 1 ? 'issue' : 'issues'}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {classification?.labels && (
+        <div className="nlp-summary-section">
+          <div className="nlp-summary-card">
+            <div className="nlp-summary-header">
+              <div className="nlp-summary-label">
+                <span className="nlp-chip">NLP Signal</span>
+                <h3>{formatClassificationLabel(topLabel)}</h3>
+              </div>
+              {classifierConfidence !== null && (
+                <span className="nlp-confidence">{classifierConfidence}% confidence</span>
+              )}
+            </div>
+            <p className="nlp-summary-description">
+              {topLabel === 'neutral'
+                ? 'Our MNLI model considers this posting broadly inclusive.'
+                : 'The MNLI classifier detected meaningful bias patterns in this posting.'}
+            </p>
+            <div className="nlp-summary-meta">
+              {classification?.fallback ? (
+                <span className="nlp-fallback">Keyword fallback in use — NLP model unavailable</span>
+              ) : (
+                <span className="nlp-provider">
+                  Provider: {classification?.provider ? classification.provider.toUpperCase() : 'MNLI'}
+                </span>
+              )}
+              {typeof classification?.latency_ms === 'number' && (
+                <span className="nlp-latency">{classification.latency_ms} ms</span>
+              )}
+            </div>
+          </div>
+
+          <div className="nlp-sentence-card">
+            <div className="nlp-sentence-header">
+              <h4>Top flagged sentences</h4>
+              <span className="nlp-sentence-subtitle">
+                {hasSentenceInsights ? `Showing up to ${Math.min(3, sentence_insights.length)} of ${sentence_insights.length}` : 'Model confidence below threshold'}
+              </span>
+            </div>
+            {hasSentenceInsights ? (
+              <ul className="nlp-sentence-list">
+                {sentence_insights.slice(0, 3).map((insight, index) => (
+                  <li key={`${insight.label}-${index}`} className="nlp-sentence-item">
+                    <div className="nlp-sentence-meta">
+                      <span className="nlp-sentence-label">
+                        {formatClassificationLabel(insight.label)}
+                      </span>
+                      <span className="nlp-sentence-score">
+                        {Math.round((insight.score || 0) * 100)}%
+                      </span>
+                    </div>
+                    <p>“{insight.sentence}”</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="nlp-sentence-empty">
+                No specific sentences crossed the NLP confidence threshold.
               </div>
             )}
           </div>

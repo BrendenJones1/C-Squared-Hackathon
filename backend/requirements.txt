@@ -9,7 +9,4 @@ python-multipart==0.0.6
 beautifulsoup4==4.12.2
 requests==2.31.0
 lxml==4.9.3
-# Use any reasonably recent sentencepiece (you already have 0.2.1 in this venv).
-# Pinning to ==0.1.99 forces a from-source build that fails on macOS; this
-# relaxed constraint lets pip accept 0.2.1 without rebuilding.
 sentencepiece>=0.1.99

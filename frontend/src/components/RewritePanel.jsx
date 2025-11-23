@@ -1,7 +1,13 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import './RewritePanel.css'
 
-function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
+function RewritePanel({ 
+  original, 
+  rewrite, 
+  onRewrite, 
+  keywordMatches = [], 
+  sentenceInsights = [] 
+}) {
   const [showModal, setShowModal] = useState(false)
   const [viewMode, setViewMode] = useState('rewritten') // 'original', 'rewritten'
   const [approvedChanges, setApprovedChanges] = useState(
@@ -66,6 +72,21 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
   }
 
   // Highlight biased words in original text
+  const labelMap = {
+    'gender-bias': 'Gender bias',
+    'age-bias': 'Age bias',
+    'culture-fit-bias': 'Culture fit bias',
+    'exclusionary-language': 'Exclusionary language',
+    'disability-bias': 'Disability bias',
+  }
+
+  const hasSentenceInsights = Array.isArray(sentenceInsights) && sentenceInsights.length > 0
+
+  const formatLabel = (label) => {
+    if (!label) return 'Bias'
+    return labelMap[label] || label.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  }
+
   const highlightBiasedWords = (text) => {
     if (!text) return text
 
@@ -282,6 +303,38 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
             </div>
           </div>
         )}
+
+        <div className="nlp-insights-section">
+          <div className="nlp-insights-header">
+            <h4 className="nlp-title">
+              <span role="img" aria-label="ai">🤖</span> Potentially Biased Sentences (NLP)
+            </h4>
+            <span className="nlp-subtitle">
+              Powered by MNLI classifier
+            </span>
+          </div>
+          {hasSentenceInsights ? (
+            <ul className="nlp-sentence-list">
+              {sentenceInsights.map((insight, index) => (
+                <li key={`${insight.label}-${index}`} className="nlp-sentence">
+                  <div className="nlp-sentence-header">
+                    <span className={`nlp-label-badge nlp-${insight.label || 'generic'}`}>
+                      {formatLabel(insight.label)}
+                    </span>
+                    <span className="nlp-score">
+                      {Math.round((insight.score || 0) * 100)}% confidence
+                    </span>
+                  </div>
+                  <p className="nlp-sentence-text">“{insight.sentence}”</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="nlp-empty-state">
+              No high-confidence biased sentences flagged. Great job keeping the language inclusive!
+            </div>
+          )}
+        </div>
 
         <div className="panel-footer">
           <button className="rewrite-btn secondary" onClick={() => setShowModal(true)}>

@@ -1,17 +1,10 @@
 import re
 import time
 import logging
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import numpy as np
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoConfig
-
-try:  # ONNX acceleration is optional but preferred for hackathon demos.
-    import onnxruntime as ort
-except Exception:  # pragma: no cover - onnxruntime might be missing in CI
-    ort = None
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -20,23 +13,6 @@ logger = logging.getLogger(__name__)
 # Cache the classifier model (DeBERTa MNLI)
 _classifier: Optional[Dict] = None
 _classifier_error = None
-
-BASE_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = BASE_DIR.parent
-ONNX_DIR = PROJECT_ROOT / "onnx_models"
-DEFAULT_ONNX_CANDIDATES = [
-    ONNX_DIR / "deberta-v3-base-mnli-int8.onnx",
-    ONNX_DIR / "deberta-v3-base-mnli.onnx",
-]
-
-
-def _resolve_onnx_path() -> Optional[Path]:
-    """Return the first available ONNX model path, if any."""
-    for candidate in DEFAULT_ONNX_CANDIDATES:
-        if candidate.exists():
-            return candidate
-    return None
-
 
 def _find_entailment_idx(config) -> int:
     """Given a HF config with id2label, return the index for ENTAILMENT."""
@@ -47,24 +23,16 @@ def _find_entailment_idx(config) -> int:
     raise ValueError(f"Could not find 'entailment' label in id2label: {id2label}")
 
 
-def _softmax_np(logits: np.ndarray) -> np.ndarray:
-    """Numerically stable softmax for numpy arrays."""
-    shifted = logits - np.max(logits, axis=-1, keepdims=True)
-    exp = np.exp(shifted)
-    return exp / np.sum(exp, axis=-1, keepdims=True)
-
-
 def _mnli_entailment_probs(
     classifier: Dict,
     text: str,
     hypotheses: List[str],
 ) -> List[float]:
     """
-    Compute entailment probabilities for a batch of hypotheses using either
-    the HF model or the accelerated ONNX Runtime session.
+    Compute entailment probabilities for a batch of hypotheses using the HF
+    DeBERTa model.
     """
     tokenizer = classifier["tokenizer"]
-    provider = classifier.get("provider", "hf")
     entailment_idx = classifier["entailment_idx"]
 
     premises = [text] * len(hypotheses)
@@ -77,20 +45,11 @@ def _mnli_entailment_probs(
         max_length=512,
     )
 
-    if provider == "onnx" and classifier.get("session") is not None:
-        ort_inputs = {
-            "input_ids": encoded["input_ids"].cpu().numpy(),
-        }
-        if "attention_mask" in encoded:
-            ort_inputs["attention_mask"] = encoded["attention_mask"].cpu().numpy()
-        logits = classifier["session"].run(None, ort_inputs)[0]
-        probs = _softmax_np(logits)
-    else:
-        model = classifier["model"]
-        with torch.no_grad():
-            outputs = model(**encoded)
-            logits = outputs.logits
-            probs = torch.softmax(logits, dim=-1).cpu().numpy()
+    model = classifier["model"]
+    with torch.no_grad():
+        outputs = model(**encoded)
+        logits = outputs.logits
+        probs = torch.softmax(logits, dim=-1).cpu().numpy()
 
     return [float(p[entailment_idx]) for p in probs]
 
@@ -123,8 +82,8 @@ def _extract_biased_sentences(
     candidate_labels: List[str],
     hypotheses: Dict[str, str],
     max_sentences: int = 5,
-    min_chars: int = 40,
-    threshold: float = 0.55,
+    min_chars: int = 25,
+    threshold: float = 0.4,
 ) -> List[Dict]:
     """
     Run MNLI over individual sentences to surface the most biased snippets for
@@ -192,40 +151,18 @@ def get_classifier():
             # Use slow tokenizer to avoid optional deps; it's still plenty fast.
             tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
 
-            provider = "hf"
-            model = None
-            session = None
-
-            onnx_path = _resolve_onnx_path() if ort else None
-            if onnx_path:
-                logger.info("Found ONNX model at %s – using ONNX Runtime for MNLI.", onnx_path)
-                sess_options = ort.SessionOptions()
-                sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-                session = ort.InferenceSession(
-                    onnx_path.as_posix(),
-                    sess_options,
-                    providers=["CPUExecutionProvider"],
-                )
-                provider = "onnx"
-            else:
-                logger.info(
-                    "ONNX Runtime acceleration unavailable. Falling back to Torch HF model."
-                )
-                model = AutoModelForSequenceClassification.from_pretrained(model_name)
-                model.to("cpu")
-                model.eval()
+            model = AutoModelForSequenceClassification.from_pretrained(model_name)
+            model.to("cpu")
+            model.eval()
 
             _classifier = {
                 "tokenizer": tokenizer,
                 "model": model,
-                "session": session,
                 "entailment_idx": entailment_idx,
-                "provider": provider,
+                "provider": "hf",
                 "model_name": model_name,
             }
-            logger.info(
-                "DeBERTa MNLI classifier ready (provider=%s).", provider
-            )
+            logger.info("DeBERTa MNLI classifier ready (provider=hf).")
         except Exception as e:
             logger.error(f"Failed to load NLP classifier: {e}")
             _classifier_error = e
@@ -697,17 +634,26 @@ def analyze_with_classifier(text: str, timeout: int = 3) -> Dict:
         )
 
         logger.info("Running MNLI-based NLP classification with DeBERTa...")
-        scores = []
-        for label in candidate_labels:
-            hyp = hypotheses[label]
-            prob = _mnli_entailment_prob(classifier, text_for_analysis, hyp)
-            scores.append(prob)
+        start_time = time.perf_counter()
+        scores = _mnli_entailment_probs(
+            classifier,
+            text_for_analysis,
+            [hypotheses[label] for label in candidate_labels],
+        )
+        latency_ms = int((time.perf_counter() - start_time) * 1000)
 
         # Sort labels by score (descending) for compatibility with previous API
         paired = list(zip(candidate_labels, scores))
         paired.sort(key=lambda x: x[1], reverse=True)
         sorted_labels = [p[0] for p in paired]
         sorted_scores = [float(p[1]) for p in paired]
+
+        sentence_insights = _extract_biased_sentences(
+            text_for_analysis,
+            classifier,
+            candidate_labels,
+            hypotheses,
+        )
 
         logger.info(
             "NLP classification result: %s (confidence: %.2f)",
@@ -719,6 +665,9 @@ def analyze_with_classifier(text: str, timeout: int = 3) -> Dict:
             "labels": sorted_labels,
             "scores": sorted_scores,
             "error": None,
+            "provider": classifier.get("provider"),
+            "latency_ms": latency_ms,
+            "sentence_insights": sentence_insights,
         }
     except Exception as e:
         logger.warning(f"NLP classification failed, using keyword-only analysis: {e}")
@@ -743,7 +692,10 @@ def analyze_with_classifier(text: str, timeout: int = 3) -> Dict:
             "labels": inferred_labels[:6],
             "scores": inferred_scores[:6],
             "error": str(e),
-            "fallback": True
+            "fallback": True,
+            "provider": "keyword_fallback",
+            "latency_ms": None,
+            "sentence_insights": [],
         }
 
 
@@ -911,7 +863,8 @@ def analyze_full(text: str, use_nlp: bool = False) -> Dict:
                 "labels": inferred_labels[:6],
                 "scores": inferred_scores[:6],
                 "error": str(e),
-                "fallback": True
+                "fallback": True,
+                "sentence_insights": [],
             }
     else:
         # Skip NLP entirely, use keyword inference
@@ -932,7 +885,8 @@ def analyze_full(text: str, use_nlp: bool = False) -> Dict:
         classifier_results = {
             "labels": inferred_labels[:6],
             "scores": inferred_scores[:6],
-            "fallback": True
+            "fallback": True,
+            "sentence_insights": [],
         }
     
     # Step 3: Calculate scores based on real analysis (keywords are primary)
@@ -949,9 +903,9 @@ def analyze_full(text: str, use_nlp: bool = False) -> Dict:
         "bias_score": bias_score,
         "international_student_bias_score": intl_score,
         "inclusivity_score": inclusivity_score,
-        "inclusivity_score": inclusivity_score,
         "keyword_analysis": keyword_results,
         "classification": classifier_results or {},
+        "sentence_insights": (classifier_results or {}).get("sentence_insights", []),
         "red_flags": red_flags,
         "breakdown": {
             "visa_requirements": count_visa_issues(keyword_results),

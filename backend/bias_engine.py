@@ -1025,6 +1025,7 @@ def analyze_full(text: str, use_nlp: bool = False) -> Dict:
     bias_score = calculate_bias_score(keyword_results, classifier_results or {})
     intl_score = calculate_international_bias_score(keyword_results, text)
     inclusivity_score = calculate_inclusivity_score(keyword_results, classifier_results)
+    bias_breakdown = calculate_bias_breakdown(keyword_results, classifier_results or {}, intl_score)
     
     # Step 4: Generate red flags from real matches
     red_flags = generate_red_flags(keyword_results)
@@ -1038,6 +1039,7 @@ def analyze_full(text: str, use_nlp: bool = False) -> Dict:
         "keyword_analysis": keyword_results,
         "classification": classifier_results or {},
         "sentence_insights": (classifier_results or {}).get("sentence_insights", []),
+        "bias_breakdown": bias_breakdown,
         "red_flags": red_flags,
         "breakdown": {
             "visa_requirements": count_visa_issues(keyword_results),
@@ -1101,6 +1103,87 @@ def calculate_international_bias_score(keyword_results: Dict, source_text: Optio
                 score += weight
     
     return min(score, 100)
+
+
+def _keyword_contribution(keyword_results: Dict, key: str, weight: int, cap: int = 30) -> float:
+    count = keyword_results.get(key, {}).get("count", 0)
+    return min(count * weight, cap)
+
+
+def calculate_bias_breakdown(
+    keyword_results: Dict,
+    classifier_results: Optional[Dict] = None,
+    intl_score: Optional[int] = None,
+) -> Dict[str, int]:
+    """Blend keyword and NLP signals into percentage contributions."""
+    contributions = {
+        "gender_bias": 0.0,
+        "age_bias": 0.0,
+        "disability_bias": 0.0,
+        "cultural_fit_bias": 0.0,
+        "exclusionary_language": 0.0,
+        "appearance_bias": 0.0,
+        "international_bias": 0.0,
+    }
+
+    contributions["gender_bias"] += _keyword_contribution(keyword_results, "masculine_coded", 10)
+    contributions["gender_bias"] += _keyword_contribution(keyword_results, "feminine_coded", 8)
+    contributions["age_bias"] += _keyword_contribution(keyword_results, "age_biased", 12)
+    contributions["disability_bias"] += _keyword_contribution(keyword_results, "disability_biased", 14)
+    contributions["cultural_fit_bias"] += _keyword_contribution(keyword_results, "cultural_fit", 6)
+    contributions["exclusionary_language"] += _keyword_contribution(keyword_results, "exclusionary_language", 15)
+    contributions["appearance_bias"] += _keyword_contribution(keyword_results, "appearance_biased", 12)
+
+    if intl_score is not None:
+        contributions["international_bias"] += max(intl_score * 0.6, 0)
+
+    label_category_map = {
+        "gender-bias": "gender_bias",
+        "age-bias": "age_bias",
+        "disability-bias": "disability_bias",
+        "culture-fit-bias": "cultural_fit_bias",
+        "exclusionary-language": "exclusionary_language",
+        "intl-bias": "international_bias",
+    }
+
+    if classifier_results and classifier_results.get("labels") and classifier_results.get("scores"):
+        signal = classifier_results.get("calibrated_scores") or classifier_results.get("scores")
+        for label, score in zip(classifier_results["labels"], signal):
+            if label == "neutral" or score < 0.1:
+                continue
+            category = label_category_map.get(label)
+            if not category:
+                continue
+            contributions[category] += float(score) * 20.0
+
+    smoothing = 0.35
+    adjusted = {k: v + smoothing for k, v in contributions.items()}
+    total = sum(adjusted.values()) or 1.0
+    percentages = {k: (v / total) * 100.0 for k, v in adjusted.items()}
+
+    rounded = {}
+    total_sum = 0
+    for key, value in percentages.items():
+        rounded_value = max(1, int(round(value)))
+        rounded[key] = rounded_value
+        total_sum += rounded_value
+
+    diff = total_sum - 100
+    keys_sorted = sorted(rounded.keys(), key=lambda k: rounded[k], reverse=True)
+    idx = 0
+    guard = 0
+    while diff != 0 and guard < 500:
+        key = keys_sorted[idx % len(keys_sorted)]
+        if diff > 0 and rounded[key] > 1:
+            rounded[key] -= 1
+            diff -= 1
+        elif diff < 0:
+            rounded[key] += 1
+            diff += 1
+        idx += 1
+        guard += 1
+
+    return rounded
 
 
 def count_visa_issues(keyword_results: Dict) -> int:

@@ -9,7 +9,8 @@ function AnalysisResults({ results }) {
     red_flags, 
     breakdown,
     classification,
-    sentence_insights = []
+    sentence_insights = [],
+    bias_breakdown
   } = results
   const [expandedCategories, setExpandedCategories] = useState({})
   const [expandedFlags, setExpandedFlags] = useState({})
@@ -69,6 +70,69 @@ function AnalysisResults({ results }) {
     return 'Model signal'
   }
 
+  const biasBreakdownEntries = [
+    {
+      key: 'gender_bias',
+      label: 'Gender Bias',
+      description: 'Masculine/feminine coded language or explicit gender preferences'
+    },
+    {
+      key: 'age_bias',
+      label: 'Age Bias',
+      description: 'Age restrictions or age-coded language'
+    },
+    {
+      key: 'disability_bias',
+      label: 'Disability Bias',
+      description: 'Physical requirements or accommodation refusals'
+    },
+    {
+      key: 'cultural_fit_bias',
+      label: 'Cultural Fit Bias',
+      description: 'Vague cultural fit requirements that may exclude diverse candidates'
+    },
+    {
+      key: 'exclusionary_language',
+      label: 'Exclusionary Language',
+      description: 'Visa restrictions, language requirements, geographic limitations'
+    },
+    {
+      key: 'appearance_bias',
+      label: 'Appearance Bias',
+      description: 'Tattoo, piercing, or hairstyle restrictions'
+    },
+    {
+      key: 'international_bias',
+      label: 'International Bias',
+      description: 'Work authorization, sponsorship, and geographic exclusion'
+    }
+  ]
+
+  const renderBiasBreakdownItem = ({ key, label, description }) => {
+    if (!biasBreakdown || biasBreakdown[key] === undefined) return null
+    const value = Math.max(1, Math.round(biasBreakdown[key]))
+    return (
+      <div className="breakdown-item" key={key}>
+        <div className="breakdown-info">
+          <span className="breakdown-label">{label}</span>
+          <span className="breakdown-desc">{description}</span>
+        </div>
+        <div className="breakdown-right">
+          <div className="breakdown-progress">
+            <div 
+              className={`breakdown-progress-bar ${getScoreColor(value)}`}
+              style={{ width: `${value}%` }}
+            />
+          </div>
+          <span className={`breakdown-value ${getScoreColor(value)}`}>
+            {value}%
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  const biasBreakdown = bias_breakdown || null
   const topLabel = classification?.labels?.[0]
   const classifierScoreSource = classification?.calibrated_scores?.length
     ? classification.calibrated_scores
@@ -166,115 +230,14 @@ function AnalysisResults({ results }) {
         )}
       </div>
 
-      {inclusivity_score && inclusivity_score.breakdown && (
+      {biasBreakdown && (
         <div className="inclusivity-breakdown-section">
           <h3 className="section-title">Bias Category Breakdown</h3>
-          <p className="section-description">These scores show bias levels in each category. Lower scores are better (less bias detected).</p>
+          <p className="section-description">
+            Contribution of each category (keywords + NLP) to the overall bias score. Higher percentages indicate larger impact.
+          </p>
           <div className="breakdown-items">
-            <div className="breakdown-item">
-              <div className="breakdown-info">
-                <span className="breakdown-label">Gender Bias</span>
-                <span className="breakdown-desc">Masculine/feminine coded language or explicit gender preferences</span>
-              </div>
-              <div className="breakdown-right">
-                <div className="breakdown-progress">
-                  <div 
-                    className={`breakdown-progress-bar ${getScoreColor(inclusivity_score.breakdown.gender_bias)}`}
-                    style={{ width: `${inclusivity_score.breakdown.gender_bias}%` }}
-                  />
-                </div>
-                <span className={`breakdown-value ${getScoreColor(inclusivity_score.breakdown.gender_bias)}`}>
-                  {Math.round(inclusivity_score.breakdown.gender_bias)}
-                </span>
-              </div>
-            </div>
-            <div className="breakdown-item">
-              <div className="breakdown-info">
-                <span className="breakdown-label">Age Bias</span>
-                <span className="breakdown-desc">Age restrictions or age-coded language</span>
-              </div>
-              <div className="breakdown-right">
-                <div className="breakdown-progress">
-                  <div 
-                    className={`breakdown-progress-bar ${getScoreColor(inclusivity_score.breakdown.age_bias)}`}
-                    style={{ width: `${inclusivity_score.breakdown.age_bias}%` }}
-                  />
-                </div>
-                <span className={`breakdown-value ${getScoreColor(inclusivity_score.breakdown.age_bias)}`}>
-                  {Math.round(inclusivity_score.breakdown.age_bias)}
-                </span>
-              </div>
-            </div>
-            <div className="breakdown-item">
-              <div className="breakdown-info">
-                <span className="breakdown-label">Disability Bias</span>
-                <span className="breakdown-desc">Physical requirements or accommodation refusals</span>
-              </div>
-              <div className="breakdown-right">
-                <div className="breakdown-progress">
-                  <div 
-                    className={`breakdown-progress-bar ${getScoreColor(inclusivity_score.breakdown.disability_bias)}`}
-                    style={{ width: `${inclusivity_score.breakdown.disability_bias}%` }}
-                  />
-                </div>
-                <span className={`breakdown-value ${getScoreColor(inclusivity_score.breakdown.disability_bias)}`}>
-                  {Math.round(inclusivity_score.breakdown.disability_bias)}
-                </span>
-              </div>
-            </div>
-            <div className="breakdown-item">
-              <div className="breakdown-info">
-                <span className="breakdown-label">Cultural Fit Bias</span>
-                <span className="breakdown-desc">Vague cultural fit requirements that may exclude diverse candidates</span>
-              </div>
-              <div className="breakdown-right">
-                <div className="breakdown-progress">
-                  <div 
-                    className={`breakdown-progress-bar ${getScoreColor(inclusivity_score.breakdown.cultural_fit_bias)}`}
-                    style={{ width: `${inclusivity_score.breakdown.cultural_fit_bias}%` }}
-                  />
-                </div>
-                <span className={`breakdown-value ${getScoreColor(inclusivity_score.breakdown.cultural_fit_bias)}`}>
-                  {Math.round(inclusivity_score.breakdown.cultural_fit_bias)}
-                </span>
-              </div>
-            </div>
-            <div className="breakdown-item">
-              <div className="breakdown-info">
-                <span className="breakdown-label">Exclusionary Language</span>
-                <span className="breakdown-desc">Visa restrictions, language requirements, geographic limitations</span>
-              </div>
-              <div className="breakdown-right">
-                <div className="breakdown-progress">
-                  <div 
-                    className={`breakdown-progress-bar ${getScoreColor(inclusivity_score.breakdown.exclusionary_language)}`}
-                    style={{ width: `${inclusivity_score.breakdown.exclusionary_language}%` }}
-                  />
-                </div>
-                <span className={`breakdown-value ${getScoreColor(inclusivity_score.breakdown.exclusionary_language)}`}>
-                  {Math.round(inclusivity_score.breakdown.exclusionary_language)}
-                </span>
-              </div>
-            </div>
-            {inclusivity_score.breakdown.appearance_bias !== undefined && (
-              <div className="breakdown-item">
-                <div className="breakdown-info">
-                  <span className="breakdown-label">Appearance Bias</span>
-                  <span className="breakdown-desc">Tattoo, piercing, or hairstyle restrictions</span>
-                </div>
-                <div className="breakdown-right">
-                  <div className="breakdown-progress">
-                    <div 
-                      className={`breakdown-progress-bar ${getScoreColor(inclusivity_score.breakdown.appearance_bias)}`}
-                      style={{ width: `${inclusivity_score.breakdown.appearance_bias}%` }}
-                    />
-                  </div>
-                  <span className={`breakdown-value ${getScoreColor(inclusivity_score.breakdown.appearance_bias)}`}>
-                    {Math.round(inclusivity_score.breakdown.appearance_bias)}
-                  </span>
-                </div>
-              </div>
-            )}
+            {biasBreakdownEntries.map(entry => renderBiasBreakdownItem(entry))}
           </div>
         </div>
       )}

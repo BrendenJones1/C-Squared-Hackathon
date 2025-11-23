@@ -116,10 +116,6 @@ function JobInput({ onAnalyze, onParseLink, loading, initialText }) {
           )}
         </div>
       )}
-      
-      <p className="analysis-hint">
-        ⚡ Fast keyword-based analysis (NLP disabled for speed)
-      </p>
     </div>
   )
 }

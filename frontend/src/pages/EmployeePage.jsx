@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import JobInput from '../components/JobInput'
 import AnalysisResults from '../components/AnalysisResults'
-import RewritePanel from '../components/RewritePanel'
 import CompanyDEI from '../components/CompanyDEI'
 import AlternativeJobs from '../components/AlternativeJobs'
 import '../App.css'
@@ -12,7 +11,6 @@ function EmployeePage() {
   const navigate = useNavigate()
   const [jobText, setJobText] = useState('')
   const [analysisResults, setAnalysisResults] = useState(null)
-  const [rewriteResult, setRewriteResult] = useState(null)
   const [companyData, setCompanyData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -72,8 +70,6 @@ function EmployeePage() {
       if (companyName) {
         await fetchCompanyData(companyName)
       }
-      
-      await handleRewrite(text)
     } catch (err) {
       if (err.name === 'AbortError') {
         setError('Analysis took longer than 10 seconds and was cancelled. Please try again or shorten the job description.')
@@ -82,35 +78,6 @@ function EmployeePage() {
       }
     } finally {
       clearTimeout(timeoutId)
-      setLoading(false)
-    }
-  }
-
-  const handleRewrite = async (textToRewrite = null) => {
-    const text = textToRewrite || jobText
-    if (!text) return
-    
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await fetch('http://localhost:8000/rewrite', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text }),
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || 'Rewrite failed. Please try again.')
-      }
-      
-      const data = await response.json()
-      setRewriteResult(data)
-    } catch (err) {
-      setError(err.message || 'An unexpected error occurred during rewrite. Please try again.')
-    } finally {
       setLoading(false)
     }
   }
@@ -228,14 +195,6 @@ function EmployeePage() {
           </div>
           
           <div className="right-column">
-            {rewriteResult && (
-              <RewritePanel
-                original={jobText}
-                rewrite={rewriteResult}
-                onRewrite={handleRewrite}
-                keywordMatches={analysisResults?.keyword_analysis ? Object.values(analysisResults.keyword_analysis) : []}
-              />
-            )}
             {companyData && (
               <CompanyDEI data={companyData} />
             )}

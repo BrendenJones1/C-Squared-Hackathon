@@ -52,6 +52,61 @@ function EmployerPage() {
     }
   }
 
+  const handleParseLink = async (url) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Basic URL validation
+      new URL(url)
+    } catch {
+      const errorMsg =
+        'Please enter a valid URL (e.g., https://linkedin.com/jobs/view/...)'
+      setError(errorMsg)
+      setLoading(false)
+      throw new Error(errorMsg)
+    }
+
+    try {
+      const response = await fetch('http://localhost:8000/parse-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMsg =
+          errorData.detail ||
+          'Link parsing failed. Please check your connection and try again.'
+        setError(errorMsg)
+        throw new Error(errorMsg)
+      }
+
+      const data = await response.json()
+      if (data.success && data.raw_text) {
+        setJobText(data.raw_text)
+        await handleRewrite(data.raw_text)
+      } else {
+        const errorMsg =
+          data.error ||
+          'Could not detect a valid job posting at this URL. The site may require login, use heavy JavaScript, or may not be a standard job posting page.'
+        setError(errorMsg)
+        throw new Error(errorMsg)
+      }
+    } catch (err) {
+      const errorMsg =
+        err.message ||
+        'An unexpected error occurred. Please try again or paste the job description text directly.'
+      setError(errorMsg)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="app">
       <Header />
@@ -60,7 +115,7 @@ function EmployerPage() {
           <div className="left-column">
             <JobInput
               onAnalyze={handleAnalyze}
-              onParseLink={handleAnalyze}
+              onParseLink={handleParseLink}
               loading={loading}
               initialText={jobText}
             />

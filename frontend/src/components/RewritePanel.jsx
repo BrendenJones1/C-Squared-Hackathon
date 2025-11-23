@@ -7,6 +7,7 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
   const [approvedChanges, setApprovedChanges] = useState(
     rewrite?.changes ? rewrite.changes.map(() => true) : []
   )
+  const [copied, setCopied] = useState(false)
 
   const originalScrollRef = useRef(null)
   const rewrittenScrollRef = useRef(null)
@@ -14,6 +15,22 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
 
   useEffect(() => {
     setApprovedChanges(rewrite?.changes ? rewrite.changes.map(() => true) : [])
+    setCopied(false)
+  }, [rewrite])
+
+  const parsedChanges = useMemo(() => {
+    if (!rewrite?.changes) return []
+    return rewrite.changes
+      .map((change) => {
+        const match = change.match(/Replaced '(.+?)' with '(.+?)'/)
+        if (!match) return null
+        return {
+          original: match[1],
+          replacement: match[2],
+          description: change,
+        }
+      })
+      .filter(Boolean)
   }, [rewrite])
 
   const toggleApproved = (index) => {
@@ -50,30 +67,51 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
 
   // Highlight biased words in original text
   const highlightBiasedWords = (text) => {
-    if (!text || !keywordMatches || keywordMatches.length === 0) {
+    if (!text) return text
+
+    let highlighted = text
+
+    // Primary: highlight original biased phrases based on rewrite change log
+    if (parsedChanges.length > 0) {
+      parsedChanges.forEach(({ original }) => {
+        if (!original) return
+        const escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const pattern =
+          original.split(' ').length === 1
+            ? new RegExp(`\\b${escaped}\\b`, 'gi')
+            : new RegExp(escaped, 'gi')
+        highlighted = highlighted.replace(
+          pattern,
+          (match) =>
+            `<mark class="biased-word-original" title="Original biased phrase">${match}</mark>`
+        )
+      })
+      return highlighted
+    }
+
+    // Fallback: use keyword matches if no parsed changes are available
+    if (!keywordMatches || keywordMatches.length === 0) {
       return text
     }
 
     const allMatches = []
     const seenIndices = new Set()
-    
-    // Collect all matches with their positions (avoid duplicates)
-    keywordMatches.forEach(category => {
+
+    keywordMatches.forEach((category) => {
       if (category && category.matches && Array.isArray(category.matches)) {
-        category.matches.forEach(match => {
+        category.matches.forEach((match) => {
           if (!match || typeof match !== 'string') return
-          
-          // Escape special regex characters
+
           const escapedMatch = match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-          // Use word boundaries for single words, allow phrases
-          const pattern = match.split(' ').length === 1 
-            ? `\\b${escapedMatch}\\b` 
-            : escapedMatch
-          
+          const pattern =
+            match.split(' ').length === 1
+              ? `\\b${escapedMatch}\\b`
+              : escapedMatch
+
           try {
             const regex = new RegExp(pattern, 'gi')
             let result
-            const textCopy = text // Create a copy to avoid regex issues
+            const textCopy = text
             while ((result = regex.exec(textCopy)) !== null) {
               const key = `${result.index}-${result.index + result[0].length}`
               if (!seenIndices.has(key)) {
@@ -81,28 +119,27 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
                 allMatches.push({
                   text: result[0],
                   index: result.index,
-                  length: result[0].length
+                  length: result[0].length,
                 })
               }
             }
-          } catch (e) {
-            // Skip invalid regex patterns
-            console.warn('Invalid regex pattern:', pattern, e)
+          } catch {
+            // skip invalid regex patterns
           }
         })
       }
     })
 
-    // Sort by index (reverse order) to avoid index shifting
     allMatches.sort((a, b) => b.index - a.index)
 
-    // Apply highlights from end to start
-    let highlighted = text
-    allMatches.forEach(match => {
+    allMatches.forEach((match) => {
       const before = highlighted.substring(0, match.index)
-      const matched = highlighted.substring(match.index, match.index + match.length)
+      const matched = highlighted.substring(
+        match.index,
+        match.index + match.length
+      )
       const after = highlighted.substring(match.index + match.length)
-      highlighted = `${before}<mark class="biased-word" title="Biased language detected">${matched}</mark>${after}`
+      highlighted = `${before}<mark class="biased-word-original" title="Biased language detected">${matched}</mark>${after}`
     })
 
     return highlighted
@@ -111,54 +148,36 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
   // Highlight changed words in rewritten text
   const highlightChanges = (originalText, rewrittenText) => {
     if (!originalText || !rewrittenText) return rewrittenText
-
-    // Simple approach: highlight words that appear in rewritten but not in original
-    // This helps show what was added/changed
-    const originalLower = originalText.toLowerCase()
-    const rewrittenWords = rewrittenText.split(/(\s+)/)
-    
-    // Find common phrases that were likely changed (from keyword matches)
     let highlighted = rewrittenText
-    if (keywordMatches && keywordMatches.length > 0) {
-      keywordMatches.forEach(category => {
-        if (category && category.matches && Array.isArray(category.matches)) {
-          category.matches.forEach(match => {
-            if (!match || typeof match !== 'string') return
-            const matchLower = match.toLowerCase()
-            // If the original had this biased term, highlight the replacement in rewritten
-            if (originalLower.includes(matchLower)) {
-              // Find common replacement patterns
-              const replacements = {
-                'rockstar': 'skilled professional',
-                'ninja': 'expert',
-                'guru': 'specialist',
-                'native english speaker': 'strong english communication skills',
-                'native speaker': 'strong communication skills',
-                'aggressive': 'proactive',
-                'work hard play hard': 'collaborative and dynamic environment',
-                'digital native': 'comfortable with technology',
-                'young and energetic': 'enthusiastic',
-                'cultural fit': 'team collaboration'
-              }
-              
-              // Check if any replacement appears in rewritten text
-              Object.entries(replacements).forEach(([original, replacement]) => {
-                if (matchLower.includes(original) && highlighted.toLowerCase().includes(replacement.toLowerCase())) {
-                  const regex = new RegExp(`(${replacement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-                  highlighted = highlighted.replace(regex, '<mark class="changed-word" title="Changed from biased language">$1</mark>')
-                }
-              })
-            }
-          })
-        }
+
+    if (parsedChanges.length > 0) {
+      parsedChanges.forEach(({ replacement }) => {
+        if (!replacement) return
+        const escaped = replacement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const pattern =
+          replacement.split(' ').length === 1
+            ? new RegExp(`\\b${escaped}\\b`, 'gi')
+            : new RegExp(escaped, 'gi')
+        highlighted = highlighted.replace(
+          pattern,
+          (match) =>
+            `<mark class="changed-word-rewritten" title="Inclusive replacement">${match}</mark>`
+        )
       })
+      return highlighted
     }
-    
+
     return highlighted
   }
 
-  const highlightedOriginal = useMemo(() => highlightBiasedWords(original), [original, keywordMatches])
-  const highlightedRewritten = useMemo(() => highlightChanges(original, rewrite.rewritten_text), [original, rewrite.rewritten_text])
+  const highlightedOriginal = useMemo(
+    () => highlightBiasedWords(original),
+    [original, keywordMatches, parsedChanges]
+  )
+  const highlightedRewritten = useMemo(
+    () => highlightChanges(original, rewrite.rewritten_text),
+    [original, rewrite.rewritten_text, parsedChanges]
+  )
 
   // Get preview text (first 200 chars)
   const previewText = rewrite.rewritten_text.substring(0, 200) + (rewrite.rewritten_text.length > 200 ? '...' : '')
@@ -271,13 +290,6 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
           <button className="rewrite-btn primary" onClick={onRewrite}>
             Regenerate
           </button>
-          <button
-            className="rewrite-btn secondary"
-            type="button"
-            onClick={() => window.print && window.print()}
-          >
-            Export as PDF
-          </button>
         </div>
       </div>
 
@@ -314,6 +326,25 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
                     <span className="label-icon">✓</span>
                     Rewritten
                     <span className="label-badge">Inclusive version</span>
+                    <button
+                      type="button"
+                      className="copy-btn"
+                      onClick={() => {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                          navigator.clipboard
+                            .writeText(rewrite.rewritten_text)
+                            .then(() => {
+                              setCopied(true)
+                              setTimeout(() => setCopied(false), 1500)
+                            })
+                            .catch(() => {
+                              // silently ignore copy failures
+                            })
+                        }
+                      }}
+                    >
+                      {copied ? 'Copied!' : 'Copy text'}
+                    </button>
                   </div>
                   <div 
                     className="text-body" 

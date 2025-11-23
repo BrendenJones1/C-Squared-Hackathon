@@ -6,10 +6,7 @@
   z-index: 100;
   box-shadow: var(--shadow-sm);
   backdrop-filter: blur(10px);
-}
-
-[data-theme="dark"] .header {
-  background: rgba(31, 41, 55, 0.95);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .header-container {
@@ -38,14 +35,6 @@
   height: 28px;
 }
 
-.logo-icon {
-  color: var(--simplify-blue);
-}
-
-[data-theme="dark"] .logo-icon {
-  color: #60a5fa;
-}
-
 .logo-text {
   font-size: 22px;
   font-weight: 700;
@@ -60,7 +49,6 @@
   display: flex;
   gap: 4px;
   align-items: center;
-  flex-wrap: nowrap;
 }
 
 .nav-item {
@@ -97,77 +85,6 @@
   border-radius: 50%;
 }
 
-.theme-toggle {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg-light);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  color: var(--text-primary);
-  transition: all 0.2s;
-  margin-left: 8px;
-  padding: 0;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 10;
-}
-
-.theme-toggle:hover {
-  background-color: var(--hover-bg);
-  border-color: var(--simplify-blue);
-  color: var(--simplify-blue);
-  transform: scale(1.05);
-}
-
-.theme-toggle:active {
-  transform: scale(0.95);
-}
-
-.theme-toggle svg {
-  width: 20px;
-  height: 20px;
-  display: block;
-  flex-shrink: 0;
-}
-
-.theme-toggle-label {
-  margin-left: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  display: none;
-}
-
-@media (min-width: 769px) {
-  .theme-toggle-label {
-    display: inline;
-  }
-
-  .theme-toggle {
-    padding: 0 12px;
-    width: auto;
-    min-width: auto;
-  }
-}
-
-[data-theme="dark"] .theme-toggle {
-  background-color: var(--bg-light);
-  border-color: var(--border-color);
-}
-
-[data-theme="dark"] .theme-toggle:hover {
-  background-color: var(--hover-bg);
-  border-color: var(--simplify-blue);
-  color: var(--simplify-blue);
-}
-
 @media (max-width: 768px) {
   .header-container {
     padding: 12px 20px;
@@ -180,36 +97,6 @@
   .nav-item {
     padding: 8px 14px;
     font-size: 13px;
-  }
-
-  .theme-toggle {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
-    margin-left: 4px;
-  }
-
-  .theme-toggle svg {
-    width: 18px;
-    height: 18px;
-  }
-}
-
-@media (max-width: 480px) {
-  .header-nav {
-    gap: 2px;
-  }
-
-  .nav-item {
-    padding: 8px 10px;
-    font-size: 12px;
-  }
-
-  .theme-toggle {
-    width: 36px;
-    height: 36px;
-    margin-left: 4px;
   }
 }
 

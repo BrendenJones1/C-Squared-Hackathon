@@ -170,17 +170,14 @@ function App() {
       }
       
       const data = await response.json()
-      
-      // Check if parsing was successful
       if (data.success && data.raw_text) {
         setJobText(data.raw_text)
         await handleAnalyze(data.raw_text)
       } else {
-        // Show helpful error message
-        const errorMsg = data.error || data.message || 
-          'Could not detect a valid job posting at this URL. Many job sites (like LinkedIn) require authentication or use JavaScript rendering that prevents automatic extraction.\n\nPlease try:\n1. Copying the job description text directly\n2. Using a different job board (Indeed, Glassdoor)\n3. Checking if the URL is publicly accessible'
-        setError(errorMsg)
-        throw new Error(errorMsg)
+        throw new Error(
+          data.error ||
+            'Could not detect a valid job posting at this URL. The site may require login, use heavy JavaScript, or may not be a standard job posting page.'
+        )
       }
     } catch (err) {
       const errorMsg = err.message || 'An unexpected error occurred. Please try again or paste the job description text directly.'
@@ -193,9 +190,8 @@ function App() {
 
   return (
     <div className="app">
-      <a href="#main-content" className="skip-link">Skip to main content</a>
       <Header />
-      <main id="main-content" className="main-content" role="main">
+      <main className="main-content">
         <div className="content-layout">
           <div className="left-column">
             <JobInput

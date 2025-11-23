@@ -58,110 +58,18 @@ function AnalysisResults({ results }) {
     return red_flags.filter(flag => matchingCategories.includes(flag.category))
   }
 
-  const exportReport = () => {
-    const report = {
-      timestamp: new Date().toISOString(),
-      bias_score: bias_score,
-      international_student_bias_score: international_student_bias_score,
-      inclusivity_score: inclusivity_score,
-      red_flags: red_flags,
-      breakdown: breakdown
-    }
-    
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `bias-analysis-${new Date().toISOString().split('T')[0]}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
-  const exportAsText = () => {
-    let text = 'BiasLens Analysis Report\n'
-    text += '='.repeat(50) + '\n\n'
-    text += `Generated: ${new Date().toLocaleString()}\n\n`
-    text += `Overall Bias Score: ${bias_score}/100\n`
-    text += `International Student Bias Score: ${international_student_bias_score}/100\n`
-    if (inclusivity_score) {
-      text += `Inclusivity Score: ${Math.round(inclusivity_score.overall_inclusivity_score)}/100\n`
-    }
-    text += '\n' + '='.repeat(50) + '\n\n'
-    
-    if (red_flags && red_flags.length > 0) {
-      text += 'Red Flags:\n'
-      red_flags.forEach((flag, i) => {
-        text += `${i + 1}. [${flag.severity.toUpperCase()}] ${flag.text}\n`
-        text += `   Category: ${flag.category}\n\n`
-      })
-    }
-    
-    if (breakdown) {
-      text += '\nBreakdown:\n'
-      Object.entries(breakdown).forEach(([key, value]) => {
-        if (value > 0) {
-          text += `- ${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}: ${value}\n`
-        }
-      })
-    }
-    
-    const blob = new Blob([text], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `bias-analysis-${new Date().toISOString().split('T')[0]}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
   return (
-    <div className="analysis-results-card" role="region" aria-label="Bias analysis results">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-        <div>
-          <h2 className="card-title">Bias Analysis Results</h2>
-          <p className="card-subtitle" style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px', marginTop: '-8px' }}>
-            Comprehensive analysis of potential bias indicators
-          </p>
-        </div>
-        <div className="export-buttons" style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-          <button 
-            className="export-btn"
-            onClick={exportAsText}
-            aria-label="Export analysis as text file"
-            title="Export as text"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </button>
-          <button 
-            className="export-btn"
-            onClick={exportReport}
-            aria-label="Export analysis as JSON file"
-            title="Export as JSON"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10 9 9 9 8 9"/>
-            </svg>
-          </button>
-        </div>
-      </div>
+    <div className="analysis-results-card">
+      <h2 className="card-title">Bias Analysis Results</h2>
+      <p className="card-subtitle" style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px', marginTop: '-8px' }}>
+        Comprehensive analysis of potential bias indicators
+      </p>
 
       <div className="scores-section">
         <div className="score-card main-score">
           <div className="score-header">
             <div className="score-label">Overall Bias Score</div>
-            <div className="score-help" title="Higher scores indicate more bias detected. Lower is better. This score combines all detected bias indicators including gendered language, age restrictions, exclusionary terms, and more.">ℹ️</div>
+            <div className="score-help" title="Higher scores indicate more bias detected. Lower is better.">ℹ️</div>
           </div>
           <div className={`score-value ${getScoreColor(bias_score)}`}>
             {bias_score}
@@ -179,7 +87,7 @@ function AnalysisResults({ results }) {
         <div className="score-card intl-score">
           <div className="score-header">
             <div className="score-label">International Student Bias</div>
-            <div className="score-help" title="Measures bias specifically affecting international students and candidates needing visa sponsorship. Includes visa restrictions, language requirements, and geographic limitations. Lower is better.">ℹ️</div>
+            <div className="score-help" title="Measures bias specifically affecting international students and candidates needing visa sponsorship. Lower is better.">ℹ️</div>
           </div>
           <div
             className={`score-value ${getScoreColor(
@@ -204,7 +112,7 @@ function AnalysisResults({ results }) {
           <div className="score-card inclusivity-score">
             <div className="score-header">
               <div className="score-label">Inclusivity Score</div>
-              <div className="score-help" title="Higher scores indicate more inclusive language. This measures how welcoming the job posting is to candidates from diverse backgrounds. Higher is better.">ℹ️</div>
+              <div className="score-help" title="Higher scores indicate more inclusive language. Higher is better.">ℹ️</div>
             </div>
             <div className={`score-value ${getInclusivityColor(inclusivity_score.overall_inclusivity_score)}`}>
               {Math.round(inclusivity_score.overall_inclusivity_score)}
@@ -228,10 +136,7 @@ function AnalysisResults({ results }) {
           <div className="breakdown-items">
             <div className="breakdown-item">
               <div className="breakdown-info">
-                <span className="breakdown-label">
-                  Gender Bias
-                  <span className="help-icon" title="Terms like 'rockstar', 'aggressive', or explicit gender preferences can discourage qualified candidates. Use neutral language instead.">ℹ️</span>
-                </span>
+                <span className="breakdown-label">Gender Bias</span>
                 <span className="breakdown-desc">Masculine/feminine coded language or explicit gender preferences</span>
               </div>
               <div className="breakdown-right">
@@ -248,10 +153,7 @@ function AnalysisResults({ results }) {
             </div>
             <div className="breakdown-item">
               <div className="breakdown-info">
-                <span className="breakdown-label">
-                  Age Bias
-                  <span className="help-icon" title="Terms like 'young', 'digital native', or age restrictions exclude experienced candidates. Focus on skills, not age.">ℹ️</span>
-                </span>
+                <span className="breakdown-label">Age Bias</span>
                 <span className="breakdown-desc">Age restrictions or age-coded language</span>
               </div>
               <div className="breakdown-right">
@@ -302,10 +204,7 @@ function AnalysisResults({ results }) {
             </div>
             <div className="breakdown-item">
               <div className="breakdown-info">
-                <span className="breakdown-label">
-                  Exclusionary Language
-                  <span className="help-icon" title="Requirements like 'native speaker only' or 'no visa sponsorship' exclude qualified international candidates. Use 'work authorization required' instead.">ℹ️</span>
-                </span>
+                <span className="breakdown-label">Exclusionary Language</span>
                 <span className="breakdown-desc">Visa restrictions, language requirements, geographic limitations</span>
               </div>
               <div className="breakdown-right">

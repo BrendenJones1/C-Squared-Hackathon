@@ -69,13 +69,49 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
   const highlightChanges = (originalText, rewrittenText) => {
     if (!originalText || !rewrittenText) return rewrittenText
 
-    // Simple word-by-word comparison (can be enhanced with diff algorithm)
-    const originalWords = originalText.split(/(\s+)/)
+    // Simple approach: highlight words that appear in rewritten but not in original
+    // This helps show what was added/changed
+    const originalLower = originalText.toLowerCase()
     const rewrittenWords = rewrittenText.split(/(\s+)/)
     
-    // For now, just return rewritten text
-    // In production, use a proper diff library
-    return rewrittenText
+    // Find common phrases that were likely changed (from keyword matches)
+    let highlighted = rewrittenText
+    if (keywordMatches && keywordMatches.length > 0) {
+      keywordMatches.forEach(category => {
+        if (category && category.matches && Array.isArray(category.matches)) {
+          category.matches.forEach(match => {
+            if (!match || typeof match !== 'string') return
+            const matchLower = match.toLowerCase()
+            // If the original had this biased term, highlight the replacement in rewritten
+            if (originalLower.includes(matchLower)) {
+              // Find common replacement patterns
+              const replacements = {
+                'rockstar': 'skilled professional',
+                'ninja': 'expert',
+                'guru': 'specialist',
+                'native english speaker': 'strong english communication skills',
+                'native speaker': 'strong communication skills',
+                'aggressive': 'proactive',
+                'work hard play hard': 'collaborative and dynamic environment',
+                'digital native': 'comfortable with technology',
+                'young and energetic': 'enthusiastic',
+                'cultural fit': 'team collaboration'
+              }
+              
+              // Check if any replacement appears in rewritten text
+              Object.entries(replacements).forEach(([original, replacement]) => {
+                if (matchLower.includes(original) && highlighted.toLowerCase().includes(replacement.toLowerCase())) {
+                  const regex = new RegExp(`(${replacement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+                  highlighted = highlighted.replace(regex, '<mark class="changed-word" title="Changed from biased language">$1</mark>')
+                }
+              })
+            }
+          })
+        }
+      })
+    }
+    
+    return highlighted
   }
 
   const highlightedOriginal = useMemo(() => highlightBiasedWords(original), [original, keywordMatches])
@@ -205,7 +241,10 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
                     Rewritten
                     <span className="label-badge">Inclusive version</span>
                   </div>
-                  <div className="text-body">{rewrite.rewritten_text}</div>
+                  <div 
+                    className="text-body" 
+                    dangerouslySetInnerHTML={{ __html: highlightedRewritten }}
+                  />
                 </div>
               </div>
 

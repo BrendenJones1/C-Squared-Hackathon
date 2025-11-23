@@ -177,6 +177,15 @@
   cursor: help;
 }
 
+.preview-text mark.changed-word {
+  background-color: #d1fae5;
+  color: #059669;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  cursor: help;
+}
+
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
@@ -345,6 +354,15 @@
   cursor: help;
 }
 
+.text-body mark.changed-word {
+  background-color: #d1fae5;
+  color: #059669;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+  cursor: help;
+}
+
 .changes-section {
   margin-bottom: 24px;
   padding-top: 24px;
@@ -426,7 +444,7 @@
 }
 
 .rewrite-btn.primary {
-  background: linear-gradient(135deg, var(--simplify-blue) 0%, var(--simplify-blue-dark) 100%);
+  background: var(--simplify-blue);
   color: white;
   box-shadow: var(--shadow-md);
 }
@@ -434,7 +452,7 @@
 .rewrite-btn.primary:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
-  background: linear-gradient(135deg, var(--simplify-blue-dark) 0%, var(--simplify-blue) 100%);
+  background: var(--simplify-blue-dark);
 }
 
 .rewrite-btn.secondary {

@@ -36,46 +36,56 @@ def get_classifier():
     return _classifier
 
 
-# Bias keyword lists
+# Bias keyword lists - expanded for better detection
 MASCULINE_CODED = [
-    "aggressive", "ambitious", "assertive", "competitive", "confident",
-    "decisive", "dominant", "driven", "forceful", "independent",
-    "leader", "logical", "outspoken", "rockstar", "ninja", "guru",
-    "work hard play hard", "hustle", "crush it", "male applicants preferred",
-    "male preferred", "men preferred", "leadership presence", "assertive personality"
+    "aggressive", "assertive", "competitive", "decisive", "dominant", 
+    "driven", "forceful", "independent", "leader", "logical", "outspoken",
+    "rockstar", "ninja", "guru", "work hard play hard", "hustle", "crush it",
+    "male applicants preferred", "male preferred", "men preferred",
+    "leadership presence", "assertive personality", "alpha", "commanding",
+    "take charge", "strong-willed", "tough", "hard-charging"
 ]
 
 FEMININE_CODED = [
-    "nurturing", "collaborative", "empathetic", "supportive", "caring",
-    "sensitive", "gentle", "warm", "compassionate"
+    # Note: Some of these are actually positive traits, but we track them for balance
+    "nurturing", "empathetic", "supportive", "caring", "sensitive",
+    "gentle", "warm", "compassionate"
 ]
 
 AGE_BIASED = [
     "digital native", "young", "energetic", "fresh", "recent graduate",
-    "millennial", "gen z", "junior", "entry-level only", "under 30",
-    "under 25", "under 35", "young team", "young professionals",
-    "young and dynamic", "dynamic team", "recent college graduate",
-    "new graduate", "fresh out of college", "energetic team"
+    "millennial", "gen z", "gen-z", "generation z", "junior", "entry-level only",
+    "under 30", "under 25", "under 35", "under 40", "young team",
+    "young professionals", "young and dynamic", "recent college graduate",
+    "new graduate", "fresh out of college", "energetic team", "fresh graduate",
+    "recently graduated", "college-aged", "recent grad"
 ]
 
 EXCLUSIONARY_LANGUAGE = [
-    "must be eligible to work in the u.s.", "no work visa sponsorship",
-    "no sponsorship", "native english speaker", "native speaker required",
-    "native speaker only", "strong north american communication", 
-    "must have work experience in canadian", "must have work experience in american", 
-    "local experience required", "u.s. citizen only", 
+    "must be eligible to work in the u.s.", "must be eligible to work in the us",
+    "no work visa sponsorship", "no visa sponsorship", "no sponsorship",
+    "native english speaker", "native speaker required", "native speaker only",
+    "native english speaker only", "native english speaker required",
+    "strong north american communication", "north american communication style",
+    "must have work experience in canadian", "must have work experience in american",
+    "canadian work experience", "american work experience", "us work experience",
+    "local experience required", "u.s. citizen only", "us citizen only",
     "must be authorized to work in the united states", "canadian citizens only",
     "no international students", "no work-permit holders", "citizens only",
     "local applicants only", "no relocations", "must be local",
-    "no remote", "on-site only", "must relocate", "no visa sponsorship",
-    "u.s. work authorization required", "must be legally authorized to work"
+    "no remote", "on-site only", "must relocate", "u.s. work authorization required",
+    "must be legally authorized to work", "must be authorized to work in us",
+    "must be authorized to work in u.s.", "work authorization in us required",
+    "eligible to work in the united states", "eligible to work in us"
 ]
 
 CULTURAL_FIT_CLICHES = [
     "cultural fit", "work hard play hard", "beer fridays", "startup culture",
     "fast-paced environment", "like a family", "fit the culture",
     "fit our culture", "after-work drinks", "social team", "traditional workplace",
-    "traditional culture", "team player", "go-getter", "self-starter"
+    "traditional culture", "team player", "go-getter", "self-starter",
+    "drinking culture", "happy hour", "work hard, play hard", "party culture",
+    "bro culture", "fraternity culture"
 ]
 
 DISABILITY_BIASED = [
@@ -83,14 +93,17 @@ DISABILITY_BIASED = [
     "must be able to travel", "able-bodied", "without accommodation",
     "no accommodation", "must have valid driver's license", "personal vehicle required",
     "must have car", "must drive", "driver's license required",
-    "must be able to work long hours", "work long hours without accommodation"
+    "must be able to work long hours", "work long hours without accommodation",
+    "must be physically fit", "physical fitness required", "able to lift heavy objects",
+    "must be able to stand for extended periods", "must be mobile", "no physical limitations"
 ]
 
 APPEARANCE_BIASED = [
     "professional appearance", "no visible tattoos", "no tattoos",
     "no piercings", "no visible piercings", "conventional hairstyles",
     "no unconventional hairstyles", "business professional", "clean-cut appearance",
-    "well-groomed", "professional dress", "appropriate appearance"
+    "well-groomed", "professional dress", "appropriate appearance",
+    "conservative appearance", "professional image", "presentable appearance"
 ]
 
 
@@ -502,7 +515,7 @@ def count_language_bias(keyword_results: Dict) -> int:
 
 
 def generate_red_flags(keyword_results: Dict) -> List[Dict]:
-    """Generate red flag warnings with severity"""
+    """Generate red flag warnings with severity, explanations, and suggestions"""
     flags = []
     seen_flags = set()  # Avoid duplicates
     
@@ -519,7 +532,9 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
                     "text": flag_text,
                     "severity": "high",
                     "icon": "❗",
-                    "category": "Visa/Immigration Exclusion"
+                    "category": "Visa/Immigration Exclusion",
+                    "explanation": "This requirement explicitly excludes international candidates who may need visa sponsorship. This can be illegal in many jurisdictions and significantly reduces your talent pool.",
+                    "suggestion": "Consider stating 'Visa sponsorship available for qualified candidates' or removing the restriction entirely if not legally required."
                 })
                 seen_flags.add(flag_text)
         elif "native" in match_lower:
@@ -529,7 +544,9 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
                     "text": flag_text,
                     "severity": "high",
                     "icon": "❗",
-                    "category": "Language Discrimination"
+                    "category": "Language Discrimination",
+                    "explanation": "Requiring 'native' language skills discriminates against qualified candidates who learned the language as a second language. This excludes many talented international candidates.",
+                    "suggestion": "Replace with 'fluent in [language]' or 'professional proficiency in [language]' to focus on ability rather than origin."
                 })
                 seen_flags.add(flag_text)
         elif "local applicants only" in match_lower or "no relocations" in match_lower:
@@ -539,7 +556,9 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
                     "text": flag_text,
                     "severity": "high",
                     "icon": "❗",
-                    "category": "Geographic Exclusion"
+                    "category": "Geographic Exclusion",
+                    "explanation": "Geographic restrictions unnecessarily limit your candidate pool and may exclude highly qualified candidates willing to relocate.",
+                    "suggestion": "If location is truly required, specify why (e.g., 'Must work on-site in [location]'). Otherwise, consider remote work options or relocation assistance."
                 })
                 seen_flags.add(flag_text)
     
@@ -553,7 +572,9 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
                     "text": flag_text,
                     "severity": "high",
                     "icon": "❗",
-                    "category": "Gender Discrimination"
+                    "category": "Gender Discrimination",
+                    "explanation": "Explicitly stating a gender preference is illegal in most jurisdictions and constitutes direct discrimination. This violates equal employment opportunity laws.",
+                    "suggestion": "Remove all gender-specific language. Focus on skills, qualifications, and competencies that are relevant to the role."
                 })
                 seen_flags.add(flag_text)
     
@@ -567,7 +588,9 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
                     "text": flag_text,
                     "severity": "high",
                     "icon": "❗",
-                    "category": "Age Discrimination"
+                    "category": "Age Discrimination",
+                    "explanation": "Age restrictions are illegal in many countries (e.g., ADEA in the US protects workers 40+). This excludes experienced candidates and may violate employment law.",
+                    "suggestion": "Remove age restrictions. If you need specific experience levels, state years of experience or skill requirements instead (e.g., '2-5 years of experience')."
                 })
                 seen_flags.add(flag_text)
     
@@ -581,7 +604,9 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
                     "text": match,
                     "severity": "high",
                     "icon": "❗",
-                    "category": "Disability Discrimination"
+                    "category": "Disability Discrimination",
+                    "explanation": "Refusing to provide reasonable accommodations violates the ADA (US) and similar laws worldwide. This excludes qualified candidates with disabilities and may be illegal.",
+                    "suggestion": "Remove accommodation refusals. Add 'We provide reasonable accommodations for qualified candidates with disabilities' to show inclusivity."
                 })
                 seen_flags.add(flag_text)
     
@@ -595,7 +620,9 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
                     "text": match,
                     "severity": "high",
                     "icon": "❗",
-                    "category": "Appearance Discrimination"
+                    "category": "Appearance Discrimination",
+                    "explanation": "Appearance restrictions based on tattoos, piercings, or hairstyles can discriminate against cultural and religious practices. These requirements are often unnecessary for job performance.",
+                    "suggestion": "Remove appearance restrictions unless they're essential for safety (e.g., food service). Focus on professional presentation rather than specific appearance requirements."
                 })
                 seen_flags.add(flag_text)
     
@@ -609,7 +636,9 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
                     "text": match,
                     "severity": "medium",
                     "icon": "⚠️",
-                    "category": "Cultural Fit Bias"
+                    "category": "Cultural Fit Bias",
+                    "explanation": "Vague 'cultural fit' requirements can be used to exclude candidates from different backgrounds, cultures, or demographics. This often leads to unconscious bias in hiring.",
+                    "suggestion": "Be specific about what you mean. Instead of 'cultural fit,' describe actual values (e.g., 'collaborative team player,' 'values diversity and inclusion')."
                 })
                 seen_flags.add(flag_text)
     

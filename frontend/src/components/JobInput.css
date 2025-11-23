@@ -117,7 +117,7 @@
 
 .analyze-btn {
   padding: 16px 32px;
-  background: linear-gradient(135deg, var(--simplify-blue) 0%, var(--simplify-blue-dark) 100%);
+  background: var(--simplify-blue);
   color: white;
   border: none;
   border-radius: var(--radius-lg);
@@ -136,7 +136,7 @@
 .analyze-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
-  background: linear-gradient(135deg, var(--simplify-blue-dark) 0%, var(--simplify-blue) 100%);
+  background: var(--simplify-blue-dark);
 }
 
 .analyze-btn:active:not(:disabled) {

@@ -637,6 +637,145 @@
   background-color: var(--hover-bg);
 }
 
+.nlp-insights-section {
+  margin-top: 32px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-lighter);
+}
+
+.nlp-insights-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.nlp-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.nlp-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.nlp-sentence-list {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nlp-sentence {
+  background: var(--bg-white);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  padding: 16px;
+  box-shadow: var(--shadow-xs);
+}
+
+.nlp-sentence-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.nlp-label-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--bg-lighter);
+  color: var(--text-secondary);
+}
+
+.nlp-label-badge.nlp-gender-bias {
+  background: rgba(236, 72, 153, 0.15);
+  color: #be185d;
+}
+
+.nlp-label-badge.nlp-age-bias {
+  background: rgba(249, 115, 22, 0.15);
+  color: #c2410c;
+}
+
+.nlp-label-badge.nlp-culture-fit-bias {
+  background: rgba(59, 130, 246, 0.15);
+  color: #1d4ed8;
+}
+
+.nlp-label-badge.nlp-exclusionary-language {
+  background: rgba(248, 113, 113, 0.15);
+  color: #b91c1c;
+}
+
+.nlp-label-badge.nlp-intl-bias {
+  background: rgba(14, 165, 233, 0.15);
+  color: #0369a1;
+}
+
+.nlp-label-badge.nlp-disability-bias {
+  background: rgba(139, 92, 246, 0.15);
+  color: #6d28d9;
+}
+
+.nlp-score {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.nlp-confidence-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 8px;
+}
+
+.nlp-confidence-chip.high {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+.nlp-confidence-chip.low {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+}
+
+.nlp-sentence-text {
+  font-size: 14px;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.nlp-empty-state {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--bg-white);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  border: 1px dashed var(--border-color);
+}
+
 @media (max-width: 768px) {
   .side-by-side-container {
     grid-template-columns: 1fr;

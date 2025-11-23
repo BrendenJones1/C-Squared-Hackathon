@@ -7,18 +7,52 @@ import '../App.css'
 function EmployerPage() {
   const [jobText, setJobText] = useState('')
   const [rewriteResult, setRewriteResult] = useState(null)
+  const [analysisResults, setAnalysisResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   const handleAnalyze = async (text) => {
-    // For employers we go straight to rewrite; no separate bias score UI
+    // For employers we focus on rewrite, but still run full bias analysis
+    // (lookup table + MNLI) to drive highlights and reasoning.
     if (!text || text.trim().length < 10) {
       setError('Please provide a job description with at least 10 characters.')
       return
     }
 
     setJobText(text)
+    await runFullAnalysis(text)
     await handleRewrite(text)
+  }
+
+  const runFullAnalysis = async (text) => {
+    if (!text) return
+
+    try {
+      // We do not share the loading flag here so the UI feels snappier:
+      // loading is already controlled by rewrite; analysis runs in parallel.
+      const response = await fetch('http://localhost:8000/analyze/full', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text, use_nlp: true }),
+      })
+
+      if (!response.ok) {
+        // If analysis fails, we still allow rewrite to proceed; just log error.
+        const errorData = await response.json().catch(() => ({}))
+        console.error(
+          'Employer full analysis failed:',
+          errorData.detail || response.statusText
+        )
+        return
+      }
+
+      const data = await response.json()
+      setAnalysisResults(data)
+    } catch (err) {
+      console.error('Employer full analysis error:', err)
+    }
   }
 
   const handleRewrite = async (textToRewrite = null) => {
@@ -88,6 +122,8 @@ function EmployerPage() {
       const data = await response.json()
       if (data.success && data.raw_text) {
         setJobText(data.raw_text)
+        // Run analysis + rewrite sequentially for scraped text.
+        await runFullAnalysis(data.raw_text)
         await handleRewrite(data.raw_text)
       } else {
         const errorMsg =
@@ -128,8 +164,13 @@ function EmployerPage() {
                 original={jobText}
                 rewrite={rewriteResult}
                 onRewrite={handleRewrite}
-                // Employer view focuses on replacements; we omit bias-category highlights here
-                keywordMatches={[]}
+                // Employer view: show bias highlights based on full analysis
+                keywordMatches={
+                  analysisResults?.keyword_analysis
+                    ? Object.values(analysisResults.keyword_analysis)
+                    : []
+                }
+                sentenceInsights={analysisResults?.sentence_insights || []}
               />
             )}
           </div>

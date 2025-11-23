@@ -521,3 +521,167 @@
   color: var(--simplify-blue);
 }
 
+.nlp-summary-section {
+  margin-top: 32px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.nlp-summary-card,
+.nlp-sentence-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  background: var(--bg-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.nlp-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.nlp-summary-label h3 {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+
+.nlp-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(10, 102, 194, 0.08);
+  color: var(--simplify-blue);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.nlp-confidence {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.nlp-summary-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+}
+
+.nlp-summary-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.nlp-fallback {
+  color: var(--error-red);
+  font-weight: 600;
+}
+
+.nlp-provider {
+  font-weight: 600;
+}
+
+.nlp-latency {
+  font-style: italic;
+}
+
+.nlp-sentence-card {
+  background: var(--bg-lighter);
+}
+
+.nlp-sentence-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.nlp-sentence-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.nlp-sentence-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nlp-sentence-item {
+  background: var(--bg-white);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  padding: 12px 14px;
+}
+
+.nlp-sentence-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.nlp-sentence-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nlp-sentence-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.nlp-sentence-confidence {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.nlp-sentence-confidence.high {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+.nlp-sentence-confidence.low {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+}
+
+.nlp-sentence-score {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.nlp-sentence-item p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.nlp-sentence-empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+

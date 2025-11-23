@@ -1123,128 +1123,170 @@ def generate_red_flags(keyword_results: Dict) -> List[Dict]:
     flags = []
     seen_flags = set()  # Avoid duplicates
     
+    # Visa/Immigration Exclusion - match count_visa_issues logic
     exclusionary = keyword_results.get("exclusionary_language", {}).get("matches", [])
-    
     for match in exclusionary:
         match_lower = match.lower()
-        if ("no sponsorship" in match_lower or "visa" in match_lower or 
-            "no international" in match_lower or "citizens only" in match_lower or
-            "no work-permit" in match_lower):
+        if ("visa" in match_lower or "sponsorship" in match_lower or 
+            "eligible to work" in match_lower or "no international" in match_lower or 
+            "citizens only" in match_lower or "no work-permit" in match_lower or
+            "no opt" in match_lower or "no cpt" in match_lower or
+            "not considering opt" in match_lower or "not considering cpt" in match_lower):
             flag_text = match
             if flag_text not in seen_flags:
+                explanation = f"The phrase '{match}' explicitly excludes international candidates who may need visa sponsorship or work authorization support. This requirement can be illegal in many jurisdictions and significantly reduces your talent pool by excluding qualified candidates from diverse backgrounds."
                 flags.append({
                     "text": flag_text,
                     "severity": "high",
                     "icon": "❗",
                     "category": "Visa/Immigration Exclusion",
-                    "explanation": "This requirement explicitly excludes international candidates who may need visa sponsorship. This can be illegal in many jurisdictions and significantly reduces your talent pool.",
-                    "suggestion": "Consider stating 'Visa sponsorship available for qualified candidates' or removing the restriction entirely if not legally required."
+                    "explanation": explanation,
+                    "suggestion": "Consider stating 'Visa sponsorship available for qualified candidates' or removing the restriction entirely if not legally required. Focus on work authorization rather than citizenship status."
                 })
                 seen_flags.add(flag_text)
-        elif "native" in match_lower:
+        elif "native" in match_lower or "english" in match_lower:
+            # This matches count_language_bias logic - flag all language-related exclusionary terms
             flag_text = match
             if flag_text not in seen_flags:
+                if "native" in match_lower:
+                    explanation = f"The phrase '{match}' requires 'native' language skills, which discriminates against qualified candidates who learned the language as a second language. This excludes many talented international candidates and may violate equal opportunity laws by focusing on origin rather than ability."
+                else:
+                    explanation = f"The phrase '{match}' contains restrictive English-only requirements that can exclude qualified candidates who are fluent but learned English as a second language. This unnecessarily limits your talent pool and may discriminate against international candidates and non-native speakers."
+                
                 flags.append({
                     "text": flag_text,
                     "severity": "high",
                     "icon": "❗",
                     "category": "Language Discrimination",
-                    "explanation": "Requiring 'native' language skills discriminates against qualified candidates who learned the language as a second language. This excludes many talented international candidates.",
-                    "suggestion": "Replace with 'fluent in [language]' or 'professional proficiency in [language]' to focus on ability rather than origin."
+                    "explanation": explanation,
+                    "suggestion": "Replace with 'fluent in [language]' or 'professional proficiency in [language]' to focus on communication ability rather than language origin. This opens your role to qualified candidates regardless of their native language."
                 })
                 seen_flags.add(flag_text)
-        elif "local applicants only" in match_lower or "no relocations" in match_lower:
+        elif ("local applicants only" in match_lower or "no relocations" in match_lower or 
+              "must be local" in match_lower or "must be in north america" in match_lower or
+              "north american applicants only" in match_lower):
             flag_text = match
             if flag_text not in seen_flags:
+                explanation = f"The phrase '{match}' imposes geographic restrictions that unnecessarily limit your candidate pool. This may exclude highly qualified candidates willing to relocate and can reduce diversity in your applicant pool."
                 flags.append({
                     "text": flag_text,
                     "severity": "high",
                     "icon": "❗",
                     "category": "Geographic Exclusion",
-                    "explanation": "Geographic restrictions unnecessarily limit your candidate pool and may exclude highly qualified candidates willing to relocate.",
-                    "suggestion": "If location is truly required, specify why (e.g., 'Must work on-site in [location]'). Otherwise, consider remote work options or relocation assistance."
+                    "explanation": explanation,
+                    "suggestion": "If location is truly required, specify why (e.g., 'Must work on-site in [location]'). Otherwise, consider remote work options or offering relocation assistance to attract the best candidates regardless of location."
                 })
                 seen_flags.add(flag_text)
     
-    # Check for explicit gender discrimination
+    # Gender Discrimination - flag ALL masculine_coded matches (matches breakdown count)
     masculine_matches = keyword_results.get("masculine_coded", {}).get("matches", [])
     for match in masculine_matches:
-        if "male" in match.lower() or "men" in match.lower():
-            flag_text = match
-            if flag_text not in seen_flags:
-                flags.append({
-                    "text": flag_text,
-                    "severity": "high",
-                    "icon": "❗",
-                    "category": "Gender Discrimination",
-                    "explanation": "Explicitly stating a gender preference is illegal in most jurisdictions and constitutes direct discrimination. This violates equal employment opportunity laws.",
-                    "suggestion": "Remove all gender-specific language. Focus on skills, qualifications, and competencies that are relevant to the role."
-                })
-                seen_flags.add(flag_text)
+        flag_text = match
+        if flag_text not in seen_flags:
+            if "male" in match.lower() or "men" in match.lower():
+                explanation = f"The phrase '{match}' explicitly states a gender preference, which is illegal in most jurisdictions and constitutes direct discrimination. This violates equal employment opportunity laws and can result in legal consequences."
+            else:
+                explanation = f"The phrase '{match}' uses masculine-coded language that research shows can discourage women and non-binary candidates from applying. Studies indicate that words like 'rockstar,' 'ninja,' 'aggressive,' and 'dominant' are perceived as more masculine and can create an unconscious bias in job postings."
+            
+            flags.append({
+                "text": flag_text,
+                "severity": "high" if ("male" in match.lower() or "men" in match.lower()) else "medium",
+                "icon": "❗" if ("male" in match.lower() or "men" in match.lower()) else "⚠️",
+                "category": "Gender Discrimination",
+                "explanation": explanation,
+                "suggestion": "Remove all gender-specific language. For masculine-coded terms, use neutral alternatives that focus on skills and competencies (e.g., 'high-performing professional' instead of 'rockstar'). Focus on what candidates will do, not how they should be."
+            })
+            seen_flags.add(flag_text)
     
-    # Check for explicit age discrimination
+    # Age Discrimination - flag ALL age_biased matches (matches breakdown count)
     age_matches = keyword_results.get("age_biased", {}).get("matches", [])
     for match in age_matches:
-        if "under" in match.lower():
-            flag_text = match
-            if flag_text not in seen_flags:
-                flags.append({
-                    "text": flag_text,
-                    "severity": "high",
-                    "icon": "❗",
-                    "category": "Age Discrimination",
-                    "explanation": "Age restrictions are illegal in many countries (e.g., ADEA in the US protects workers 40+). This excludes experienced candidates and may violate employment law.",
-                    "suggestion": "Remove age restrictions. If you need specific experience levels, state years of experience or skill requirements instead (e.g., '2-5 years of experience')."
-                })
-                seen_flags.add(flag_text)
+        flag_text = match
+        if flag_text not in seen_flags:
+            if "under" in match.lower():
+                explanation = f"The phrase '{match}' contains explicit age restrictions that are illegal in many countries (e.g., ADEA in the US protects workers 40+). This excludes experienced candidates and may violate employment law, potentially resulting in discrimination claims."
+            elif "young" in match.lower() or "recent graduate" in match.lower() or "fresh out" in match.lower():
+                explanation = f"The phrase '{match}' uses age-coded language that may discourage older candidates from applying. While not explicitly illegal, this language can create age-based bias and excludes experienced professionals who may bring valuable skills and perspectives."
+            else:
+                explanation = f"The phrase '{match}' contains language that may be perceived as age-biased. This can discourage qualified candidates of certain age groups from applying and may reduce diversity in your applicant pool."
+            
+            flags.append({
+                "text": flag_text,
+                "severity": "high" if "under" in match.lower() else "medium",
+                "icon": "❗" if "under" in match.lower() else "⚠️",
+                "category": "Age Discrimination",
+                "explanation": explanation,
+                "suggestion": "Remove age restrictions and age-coded language. If you need specific experience levels, state years of experience or skill requirements instead (e.g., '2-5 years of experience' or 'early-career professional'). Focus on capabilities rather than age."
+            })
+            seen_flags.add(flag_text)
     
-    # Check for disability discrimination
+    # Disability Discrimination - flag ALL disability_biased matches (matches breakdown count)
     disability_matches = keyword_results.get("disability_biased", {}).get("matches", [])
     for match in disability_matches:
-        if "without accommodation" in match.lower() or "no accommodation" in match.lower():
-            flag_text = match
-            if flag_text not in seen_flags:
-                flags.append({
-                    "text": match,
-                    "severity": "high",
-                    "icon": "❗",
-                    "category": "Disability Discrimination",
-                    "explanation": "Refusing to provide reasonable accommodations violates the ADA (US) and similar laws worldwide. This excludes qualified candidates with disabilities and may be illegal.",
-                    "suggestion": "Remove accommodation refusals. Add 'We provide reasonable accommodations for qualified candidates with disabilities' to show inclusivity."
-                })
-                seen_flags.add(flag_text)
+        flag_text = match
+        if flag_text not in seen_flags:
+            if "without accommodation" in match.lower() or "no accommodation" in match.lower():
+                explanation = f"The phrase '{match}' explicitly refuses to provide reasonable accommodations, which violates the ADA (US) and similar laws worldwide. This excludes qualified candidates with disabilities and may be illegal, potentially resulting in discrimination lawsuits."
+            elif "able-bodied" in match.lower():
+                explanation = f"The phrase '{match}' explicitly excludes candidates with disabilities, which violates the ADA (US) and similar laws worldwide. This is illegal discrimination and excludes qualified candidates who may be able to perform the job with or without reasonable accommodations."
+            elif "must be able to lift" in match.lower() or "must be able to stand" in match.lower() or "physical requirements" in match.lower():
+                explanation = f"The phrase '{match}' specifies physical requirements that may unnecessarily exclude candidates with disabilities. Unless these requirements are essential job functions that cannot be performed with reasonable accommodations, this may violate disability discrimination laws."
+            else:
+                explanation = f"The phrase '{match}' contains language that may exclude candidates with disabilities. Unless the requirement is an essential job function, this may violate disability discrimination laws and unnecessarily limits your talent pool."
+            
+            flags.append({
+                "text": flag_text,
+                "severity": "high",
+                "icon": "❗",
+                "category": "Disability Discrimination",
+                "explanation": explanation,
+                "suggestion": "Remove accommodation refusals and unnecessary physical requirements. If physical abilities are truly essential, specify them clearly and note that reasonable accommodations will be provided. Add 'We provide reasonable accommodations for qualified candidates with disabilities' to show inclusivity."
+            })
+            seen_flags.add(flag_text)
     
-    # Check for appearance discrimination
+    # Appearance Discrimination - flag ALL appearance_biased matches (matches breakdown count)
     appearance_matches = keyword_results.get("appearance_biased", {}).get("matches", [])
     for match in appearance_matches:
-        if "no visible" in match.lower() or "no tattoos" in match.lower() or "no piercings" in match.lower():
-            flag_text = match
-            if flag_text not in seen_flags:
-                flags.append({
-                    "text": match,
-                    "severity": "high",
-                    "icon": "❗",
-                    "category": "Appearance Discrimination",
-                    "explanation": "Appearance restrictions based on tattoos, piercings, or hairstyles can discriminate against cultural and religious practices. These requirements are often unnecessary for job performance.",
-                    "suggestion": "Remove appearance restrictions unless they're essential for safety (e.g., food service). Focus on professional presentation rather than specific appearance requirements."
-                })
-                seen_flags.add(flag_text)
+        flag_text = match
+        if flag_text not in seen_flags:
+            if "no visible" in match.lower() or "no tattoos" in match.lower() or "no piercings" in match.lower():
+                explanation = f"The phrase '{match}' restricts appearance based on tattoos, piercings, or other visible characteristics. These requirements can discriminate against cultural and religious practices, exclude qualified candidates, and are often unnecessary for job performance."
+            else:
+                explanation = f"The phrase '{match}' contains appearance-based requirements that may discriminate against candidates based on their physical appearance, cultural practices, or religious beliefs. These requirements are often unnecessary and can exclude qualified candidates."
+            
+            flags.append({
+                "text": flag_text,
+                "severity": "high",
+                "icon": "❗",
+                "category": "Appearance Discrimination",
+                "explanation": explanation,
+                "suggestion": "Remove appearance restrictions unless they're essential for safety or legal compliance (e.g., food service hygiene requirements). Focus on professional presentation and demeanor rather than specific appearance requirements. This helps ensure you're evaluating candidates based on their qualifications, not their appearance."
+            })
+            seen_flags.add(flag_text)
     
-    # Cultural fit issues
+    # Cultural Fit Bias - flag ALL cultural_fit matches (matches breakdown count)
     cultural_matches = keyword_results.get("cultural_fit", {}).get("matches", [])
     for match in cultural_matches:
-        if "fit the culture" in match.lower() or "fit our culture" in match.lower():
-            flag_text = match
-            if flag_text not in seen_flags:
-                flags.append({
-                    "text": match,
-                    "severity": "medium",
-                    "icon": "⚠️",
-                    "category": "Cultural Fit Bias",
-                    "explanation": "Vague 'cultural fit' requirements can be used to exclude candidates from different backgrounds, cultures, or demographics. This often leads to unconscious bias in hiring.",
-                    "suggestion": "Be specific about what you mean. Instead of 'cultural fit,' describe actual values (e.g., 'collaborative team player,' 'values diversity and inclusion')."
-                })
-                seen_flags.add(flag_text)
+        flag_text = match
+        if flag_text not in seen_flags:
+            if "fit the culture" in match.lower() or "fit our culture" in match.lower() or "cultural fit" in match.lower():
+                explanation = f"The phrase '{match}' uses vague 'cultural fit' language that can be used to exclude candidates from different backgrounds, cultures, or demographics. This often leads to unconscious bias in hiring and reduces diversity in your organization."
+            elif "work hard play hard" in match.lower() or "work hard, play hard" in match.lower():
+                explanation = f"The phrase '{match}' suggests a work culture that may exclude candidates who cannot or prefer not to participate in after-work social activities. This can discriminate against candidates with family responsibilities, religious observances, or those who prefer work-life boundaries."
+            elif "beer fridays" in match.lower() or "after-work drinks" in match.lower():
+                explanation = f"The phrase '{match}' references alcohol-based social activities that may exclude candidates who don't drink for religious, health, or personal reasons. This can create an exclusionary culture and reduce diversity."
+            else:
+                explanation = f"The phrase '{match}' contains language that may create an exclusionary culture or suggest that only certain types of candidates will fit in. This can lead to unconscious bias and reduce diversity in your applicant pool."
+            
+            flags.append({
+                "text": flag_text,
+                "severity": "medium",
+                "icon": "⚠️",
+                "category": "Cultural Fit Bias",
+                "explanation": explanation,
+                "suggestion": "Be specific about what you mean. Instead of vague 'cultural fit' language, describe actual values and behaviors (e.g., 'collaborative team player,' 'values diversity and inclusion,' 'respects different perspectives'). Focus on professional qualities rather than social activities."
+            })
+            seen_flags.add(flag_text)
     
     return flags
 

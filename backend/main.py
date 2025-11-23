@@ -3,17 +3,30 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 import uvicorn
+import logging
 
 try:
-    from .bias_engine import detect_bias_keywords, analyze_with_classifier, analyze_full
+    from .bias_engine import (
+        detect_bias_keywords,
+        analyze_with_classifier,
+        analyze_full,
+        get_classifier,
+    )
     from .rewrite_engine import rewrite_inclusive
     from .company_dei import get_company_insights, get_alternatives, get_alternative_jobs
     from .link_parser import parse_job_link
 except ImportError:
-    from bias_engine import detect_bias_keywords, analyze_with_classifier, analyze_full
+    from bias_engine import (
+        detect_bias_keywords,
+        analyze_with_classifier,
+        analyze_full,
+        get_classifier,
+    )
     from rewrite_engine import rewrite_inclusive
     from company_dei import get_company_insights, get_alternatives, get_alternative_jobs
     from link_parser import parse_job_link
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="BiasLens API", version="1.0.0")
 
@@ -43,6 +56,19 @@ class CompanyInput(BaseModel):
 @app.get("/health")
 async def health():
     return {"status": "healthy", "service": "BiasLens API"}
+
+
+@app.on_event("startup")
+async def warmup_nlp():
+    """
+    Warm up the NLP classifier at startup so first demo calls are fast.
+    """
+    try:
+        get_classifier()
+        logger.info("NLP classifier warmed up successfully.")
+    except Exception as e:
+        # Don't crash app if warmup fails; we'll fall back to keyword-only.
+        logger.warning(f"Failed to warm up NLP classifier: {e}")
 
 
 @app.post("/analyze/keywords")

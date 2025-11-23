@@ -80,6 +80,18 @@ BIAS_PHRASES = {
         "replacement": "leadership capabilities",
         "category": "masculine_coded",
     },
+    "male applicants preferred": {
+        "replacement": "",
+        "category": "masculine_coded",
+    },
+    "male preferred": {
+        "replacement": "",
+        "category": "masculine_coded",
+    },
+    "men preferred": {
+        "replacement": "",
+        "category": "masculine_coded",
+    },
     "strong": {
         "replacement": "proven",
         "category": "masculine_coded",
@@ -114,18 +126,6 @@ BIAS_PHRASES = {
     },
     "independent": {
         "replacement": "competent",
-        "category": "masculine_coded",
-    },
-    "male applicants preferred": {
-        "replacement": "",
-        "category": "masculine_coded",
-    },
-    "male preferred": {
-        "replacement": "",
-        "category": "masculine_coded",
-    },
-    "men preferred": {
-        "replacement": "",
         "category": "masculine_coded",
     },
 
@@ -387,75 +387,51 @@ BIAS_PHRASES = {
 }
 
 
-def detect_bias_keywords(text: str) -> Dict:
-    """Detect bias keywords in text and return counts - REAL ANALYSIS"""
-    if not text or len(text.strip()) == 0:
-        return {
-            "masculine_coded": {"count": 0, "matches": []},
-            "feminine_coded": {"count": 0, "matches": []},
-            "age_biased": {"count": 0, "matches": []},
-            "exclusionary_language": {"count": 0, "matches": []},
-            "cultural_fit": {"count": 0, "matches": []},
-            "disability_biased": {"count": 0, "matches": []},
-            "appearance_biased": {"count": 0, "matches": []},
-        }
-    
-    text_lower = text.lower()
-    # Normalize whitespace for better matching
-    text_normalized = ' '.join(text_lower.split())
-    
-    results = {
-        "masculine_coded": {
-            "count": 0,
-            "matches": []
-        },
-        "feminine_coded": {
-            "count": 0,
-            "matches": []
-        },
-        "age_biased": {
-            "count": 0,
-            "matches": []
-        },
-        "exclusionary_language": {
-            "count": 0,
-            "matches": []
-        },
-        "cultural_fit": {
-            "count": 0,
-            "matches": []
-        },
-        "disability_biased": {
-            "count": 0,
-            "matches": []
-        },
-        "appearance_biased": {
-            "count": 0,
-            "matches": []
-        }
-    }
-    
-    # Unified phrase detection: one pass over the bias phrase dictionary
-    for phrase, meta in BIAS_PHRASES.items():
-        category = meta.get("category")
-        if category not in results:
-            continue
 
-        # Use word boundaries for single words, substring matching for phrases
-        if len(phrase.split()) == 1:
-            pattern = r'\b' + re.escape(phrase) + r'\b'
-            found = re.search(pattern, text_normalized, re.IGNORECASE)
-        else:
-            found = phrase in text_normalized
-
-        if found:
-            results[category]["count"] += 1
-            if phrase not in results[category]["matches"]:
-                results[category]["matches"].append(phrase)
+def detect_bias_keywords(text: str) -> Dict:    
+    if not text or len(text.strip()) == 0:        
+        return {            
+            "masculine_coded": {"count": 0, "matches": []},            
+            "feminine_coded": {"count": 0, "matches": []},            
+            "age_biased": {"count": 0, "matches": []},            
+            "exclusionary_language": {"count": 0, "matches": []},            
+            "cultural_fit": {"count": 0, "matches": []},            
+            "disability_biased": {"count": 0, "matches": []},            
+            "appearance_biased": {"count": 0, "matches": []},        
+        }    
     
-    logger.info(f"Keyword analysis found {sum(r['count'] for r in results.values())} bias indicators")
+    text_lower = text.lower()    
+    text_normalized = ' '.join(text_lower.split())    
+    
+    results = {        
+        "masculine_coded": {"count": 0, "matches": []},        
+        "feminine_coded": {"count": 0, "matches": []},        
+        "age_biased": {"count": 0, "matches": []},        
+        "exclusionary_language": {"count": 0, "matches": []},        
+        "cultural_fit": {"count": 0, "matches": []},        
+        "disability_biased": {"count": 0, "matches": []},        
+        "appearance_biased": {"count": 0, "matches": []},    
+    }    
+    
+    # Unified phrase detection: one pass over the bias phrase dictionary    
+    for phrase, meta in BIAS_PHRASES.items():        
+        category = meta.get("category")        
+        if category not in results:            
+            continue        
+        
+        if len(phrase.split()) == 1:            
+            pattern = r'\b' + re.escape(phrase) + r'\b'            
+            found = re.search(pattern, text_normalized, re.IGNORECASE)        
+        else:            
+            found = phrase in text_normalized        
+
+        if found:            
+            results[category]["count"] += 1            
+            if phrase not in results[category]["matches"]:                
+                results[category]["matches"].append(phrase)    
+    
+    logger.info(f"Keyword analysis found {sum(r['count'] for r in results.values())} bias indicators")    
     return results
-
 
 def analyze_with_classifier(text: str, timeout: int = 3) -> Dict:
     """Use zero-shot classification to detect bias types - REAL NLP ANALYSIS (with timeout)"""

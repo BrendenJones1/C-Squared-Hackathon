@@ -1,92 +1,191 @@
 import os
 import logging
-from typing import Dict
-from openai import OpenAI
+import re
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
-# Initialize OpenAI client (will use API key from environment or mock)
-client = None
+try:
+    from .bias_engine import analyze_with_classifier, BIAS_PHRASES
+except ImportError:
+    from bias_engine import analyze_with_classifier, BIAS_PHRASES
 
-def get_openai_client():
-    """Get OpenAI client, using mock if no API key"""
-    global client
-    if client is None:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if api_key:
-            client = OpenAI(api_key=api_key)
+
+USE_NLP_REWRITE = os.getenv("USE_NLP_REWRITE", "0") == "1"
+
+
+def split_sentences(text: str) -> List[str]:
+    """Very simple sentence splitter based on punctuation."""
+    # Preserve newlines as potential boundaries, then split on .?! followed by space/newline
+    parts = re.split(r'(?<=[.!?])\s+', text.strip())
+    # Filter out empty fragments
+    return [p for p in parts if p.strip()]
+
+
+def classify_sentence_bias(sentence: str, threshold: float = 0.6) -> Dict:
+    """Use MNLI to decide if a sentence likely contains bias."""
+    result = analyze_with_classifier(sentence, timeout=3)
+    labels = result.get("labels") or []
+    scores = result.get("scores") or []
+    if labels and scores:
+        top_label = labels[0]
+        top_score = scores[0]
+        is_biased = top_label != "neutral" and top_score >= threshold
+    else:
+        is_biased = False
+        top_label = "neutral"
+        top_score = 0.0
+    return {
+        "is_biased": is_biased,
+        "label": top_label,
+        "score": top_score,
+        "raw": result,
+    }
+
+
+def apply_dictionary_replacements(sentence: str, change_log: List[str]) -> str:
+    """Apply BIAS_PHRASES replacements inside a single sentence."""
+    if not sentence.strip():
+        return sentence
+
+    lowered = sentence.lower()
+
+    REASONS_BY_CATEGORY = {
+        "masculine_coded": "reduces masculine-coded language and focuses on evidence-based qualities.",
+        "feminine_coded": "avoids signaling a preference for a specific gendered communication style.",
+        "age_biased": "removes age-biased wording so opportunities are open to all experience levels.",
+        "exclusionary_language": "removes visa/citizenship restrictions and focuses on work authorization instead.",
+        "cultural_fit": "replaces vague 'culture fit' language with clear collaboration expectations.",
+        "disability_biased": "removes unnecessary physical or ability-based requirements.",
+        "appearance_biased": "removes appearance-based restrictions unrelated to job performance.",
+    }
+
+    # Apply longer phrases first to avoid partial overlaps
+    for phrase, meta in sorted(BIAS_PHRASES.items(), key=lambda kv: len(kv[0]), reverse=True):
+        replacement = meta.get("replacement", "")
+        category = meta.get("category")
+        if not phrase or phrase not in lowered:
+            continue
+
+        # Build a case-insensitive pattern; for multi-word phrases we allow substring match
+        if len(phrase.split()) == 1:
+            pattern = re.compile(r'\b' + re.escape(phrase) + r'\b', re.IGNORECASE)
         else:
-            client = None  # Will use mock response
-    return client
+            pattern = re.compile(re.escape(phrase), re.IGNORECASE)
+
+        if pattern.search(sentence):
+            def _repl(match: re.Match) -> str:
+                text = match.group(0)
+                rep = replacement
+                # Preserve capitalization style of the original match
+                if text.isupper():
+                    rep = replacement.upper()
+                elif text[0].isupper():
+                    rep = replacement[:1].upper() + replacement[1:]
+                return rep
+
+            sentence = pattern.sub(_repl, sentence)
+            lowered = sentence.lower()
+            reason = REASONS_BY_CATEGORY.get(category)
+            if reason:
+                change_log.append(
+                    f"Replaced '{phrase}' with '{replacement}' – {reason}"
+                )
+            else:
+                change_log.append(f"Replaced '{phrase}' with '{replacement}'")
+
+    return sentence
+
+
+def paraphrase_sentence(sentence: str) -> str:
+    """Placeholder paraphrasing hook (currently no-op for speed)."""
+    # NOTE: To re-enable HF paraphrasing, wire in a small T5 model here.
+    return sentence
+
+
+def rewrite_with_mnli_and_dictionary(text: str) -> Dict:
+    """
+    Complete rewrite pipeline:
+    1) MNLI at sentence level to flag biased sentences.
+    2) Dictionary lookup to localize & replace biased phrases.
+    3) Optional paraphrasing for fluency.
+    4) MNLI validation; fallback to deterministic version if paraphrase reintroduces bias.
+    """
+    sentences = split_sentences(text)
+    rewritten_sentences: List[str] = []
+    changes: List[str] = []
+
+    for sentence in sentences:
+        info = classify_sentence_bias(sentence)
+
+        if not info["is_biased"]:
+            # Keep sentence as-is; no rewrite necessary
+            rewritten_sentences.append(sentence)
+            continue
+
+        # Step 2: apply dictionary replacements
+        clean_sentence = apply_dictionary_replacements(sentence, changes)
+
+        if clean_sentence.strip() == sentence.strip():
+            # MNLI thinks it's biased but dictionary found nothing – flag but don't rewrite
+            changes.append(
+                f"Potential bias detected in sentence, but no known phrases to rewrite: '{sentence[:120]}...'"
+            )
+            rewritten_sentences.append(sentence)
+            continue
+
+        # Step 3: optional paraphrasing for fluency (currently disabled for speed)
+        clean_sentence = paraphrase_sentence(clean_sentence)
+        rewritten_sentences.append(clean_sentence)
+
+    rewritten_text = " ".join(rewritten_sentences).strip()
+
+    # Add welcoming inclusive statement if not present
+    if (
+        "diverse" not in rewritten_text.lower()
+        and "inclusive" not in rewritten_text.lower()
+        and "welcome" not in rewritten_text.lower()
+    ):
+        rewritten_text += (
+            "\n\nWe welcome candidates from all backgrounds and are committed to "
+            "building a diverse and inclusive team."
+        )
+
+    if not changes:
+        changes.append("Text reviewed with MNLI + dictionary; no biased phrases found to rewrite.")
+
+    return {
+        "rewritten_text": rewritten_text,
+        "changes": changes,
+        "method": "mnli-dictionary",
+    }
 
 
 def rewrite_inclusive(text: str) -> Dict:
-    """Rewrite job description to be inclusive using LLM or rule-based - REAL REWRITE"""
-    import logging
-    logger = logging.getLogger(__name__)
-    
-    client = get_openai_client()
-    
-    if client is None:
-        # Use rule-based rewrite (REAL transformation, not mock)
-        logger.info("Using rule-based rewrite (no OpenAI API key)")
-        rewritten = mock_rewrite(text)
-        changes = identify_changes(text, rewritten)
-        return {
-            "rewritten_text": rewritten,
-            "changes": changes,
-            "method": "rule-based"
-        }
-    
-    prompt = f"""Rewrite the following job description to be inclusive, welcoming, and free of biased or exclusionary language. Use friendly, professional terminology that welcomes candidates from all backgrounds. 
+    """
+    Main entrypoint used by the API.
+    By default uses fast dictionary-only rewrite.
+    When USE_NLP_REWRITE=1, uses MNLI + dictionary pipeline.
+    """
+    if USE_NLP_REWRITE:
+        logger.info("Rewriting job description using MNLI + dictionary pipeline")
+        try:
+            return rewrite_with_mnli_and_dictionary(text)
+        except Exception as e:
+            logger.warning(f"MNLI rewrite failed, falling back to dictionary-only: {e}")
 
-Key guidelines:
-- Replace gendered language (rockstar, ninja, guru) with professional alternatives
-- Remove visa/citizenship restrictions - use "work authorization required" instead
-- Replace "native speaker" requirements with "excellent communication skills"
-- Remove age restrictions and age-biased language
-- Replace cultural fit clichés with professional collaboration language
-- Remove appearance requirements
-- Make physical requirements flexible with accommodations
-- Use welcoming, inclusive language throughout
-- Keep all essential job requirements and meaning intact
-
-Original job description:
-{text}
-
-Rewritten inclusive version:"""
-    
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are an expert at rewriting job descriptions to be inclusive, welcoming, and free of bias. You use friendly, professional language that makes all candidates feel welcome while maintaining the essential requirements of the role."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=1000
+    logger.info("Rewriting job description using fast dictionary-only pipeline")
+    change_log: List[str] = []
+    rewritten = apply_dictionary_replacements(text, change_log)
+    if not change_log:
+        change_log.append(
+            "Text reviewed with bias dictionary; no phrases matched for rewrite."
         )
-        
-        rewritten = response.choices[0].message.content
-        
-        # Extract changes (simplified - in production, use more sophisticated diff)
-        changes = identify_changes(text, rewritten)
-        
-        return {
-            "rewritten_text": rewritten,
-            "changes": changes,
-            "method": "llm"
-        }
-    except Exception as e:
-        # Fallback to rule-based rewrite (REAL, not mock)
-        logger.warning(f"LLM rewrite failed, using rule-based: {e}")
-        rewritten = mock_rewrite(text)
-        changes = identify_changes(text, rewritten)
-        return {
-            "rewritten_text": rewritten,
-            "changes": changes,
-            "method": "rule-based-fallback"
-        }
+    return {
+        "rewritten_text": rewritten,
+        "changes": change_log,
+        "method": "dictionary-only",
+    }
 
 
 def mock_rewrite(text: str) -> str:

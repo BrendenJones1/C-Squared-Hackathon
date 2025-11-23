@@ -1,9 +1,52 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import './RewritePanel.css'
 
 function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
   const [showModal, setShowModal] = useState(false)
   const [viewMode, setViewMode] = useState('rewritten') // 'original', 'rewritten'
+  const [approvedChanges, setApprovedChanges] = useState(
+    rewrite?.changes ? rewrite.changes.map(() => true) : []
+  )
+
+  const originalScrollRef = useRef(null)
+  const rewrittenScrollRef = useRef(null)
+  const isSyncingScroll = useRef(false)
+
+  useEffect(() => {
+    setApprovedChanges(rewrite?.changes ? rewrite.changes.map(() => true) : [])
+  }, [rewrite])
+
+  const toggleApproved = (index) => {
+    setApprovedChanges((prev) => {
+      const base =
+        prev && prev.length === (rewrite?.changes?.length || 0)
+          ? [...prev]
+          : rewrite?.changes
+          ? rewrite.changes.map(() => true)
+          : []
+      if (!base.length) return base
+      base[index] = !base[index]
+      return base
+    })
+  }
+
+  const handleSyncedScroll = (source) => (e) => {
+    if (isSyncingScroll.current) return
+    const sourceEl = e.currentTarget
+    const targetEl =
+      source === 'original' ? rewrittenScrollRef.current : originalScrollRef.current
+    if (!targetEl) return
+
+    const maxSource = sourceEl.scrollHeight - sourceEl.clientHeight || 1
+    const ratio = sourceEl.scrollTop / maxSource
+    const maxTarget = targetEl.scrollHeight - targetEl.clientHeight
+
+    isSyncingScroll.current = true
+    targetEl.scrollTop = ratio * maxTarget
+    window.requestAnimationFrame(() => {
+      isSyncingScroll.current = false
+    })
+  }
 
   // Highlight biased words in original text
   const highlightBiasedWords = (text) => {
@@ -182,11 +225,33 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
               Key Changes ({rewrite.changes.length})
             </h4>
             <div className="changes-grid">
-              {rewrite.changes.slice(0, 3).map((change, index) => (
-                <div key={index} className="change-badge">
-                  {change}
-                </div>
-              ))}
+              {rewrite.changes.slice(0, 3).map((change, index) => {
+                const globalIndex = index
+                const isApproved =
+                  approvedChanges[globalIndex] === undefined
+                    ? true
+                    : approvedChanges[globalIndex]
+                return (
+                  <button
+                    type="button"
+                    key={globalIndex}
+                    className={`change-badge ${
+                      isApproved ? '' : 'change-badge-unapproved'
+                    }`}
+                    onClick={() => toggleApproved(globalIndex)}
+                  >
+                    <span
+                      className={`change-status-dot ${
+                        isApproved ? 'approved' : 'pending'
+                      }`}
+                    />
+                    <span className="change-badge-text">{change}</span>
+                    <span className="change-status-label">
+                      {isApproved ? 'Approved' : 'Pending'}
+                    </span>
+                  </button>
+                )
+              })}
               {rewrite.changes.length > 3 && (
                 <button 
                   className="view-all-changes-btn"
@@ -205,6 +270,13 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
           </button>
           <button className="rewrite-btn primary" onClick={onRewrite}>
             Regenerate
+          </button>
+          <button
+            className="rewrite-btn secondary"
+            type="button"
+            onClick={() => window.print && window.print()}
+          >
+            Export as PDF
           </button>
         </div>
       </div>
@@ -232,6 +304,8 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
                   </div>
                   <div 
                     className="text-body" 
+                    ref={originalScrollRef}
+                    onScroll={handleSyncedScroll('original')}
                     dangerouslySetInnerHTML={{ __html: highlightedOriginal }}
                   />
                 </div>
@@ -243,6 +317,8 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
                   </div>
                   <div 
                     className="text-body" 
+                    ref={rewrittenScrollRef}
+                    onScroll={handleSyncedScroll('rewritten')}
                     dangerouslySetInnerHTML={{ __html: highlightedRewritten }}
                   />
                 </div>
@@ -252,12 +328,32 @@ function RewritePanel({ original, rewrite, onRewrite, keywordMatches = [] }) {
                 <div className="modal-changes-section">
                   <h3 className="modal-changes-title">All Changes Made</h3>
                   <ul className="modal-changes-list">
-                    {rewrite.changes.map((change, index) => (
-                      <li key={index} className="modal-change-item">
-                        <span className="change-icon">✓</span>
-                        <span className="change-text">{change}</span>
-                      </li>
-                    ))}
+                    {rewrite.changes.map((change, index) => {
+                      const isApproved =
+                        approvedChanges[index] === undefined
+                          ? true
+                          : approvedChanges[index]
+                      return (
+                        <li
+                          key={index}
+                          className={`modal-change-item ${
+                            isApproved ? 'approved' : 'pending'
+                          }`}
+                        >
+                          <span className="change-icon">✓</span>
+                          <div className="change-text">
+                            <div className="change-text-main">{change}</div>
+                            <button
+                              type="button"
+                              className="change-approve-toggle"
+                              onClick={() => toggleApproved(index)}
+                            >
+                              {isApproved ? 'Mark as needs review' : 'Approve change'}
+                            </button>
+                          </div>
+                        </li>
+                      )
+                    })}
                   </ul>
                 </div>
               )}

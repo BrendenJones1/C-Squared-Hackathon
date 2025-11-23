@@ -23,6 +23,43 @@ def _find_entailment_idx(config) -> int:
     raise ValueError(f"Could not find 'entailment' label in id2label: {id2label}")
 
 
+def calibrate_confidence(score: float, boost: float = 0.15) -> float:
+    """Apply a light calibration boost to MNLI probabilities."""
+    return max(0.0, min(1.0, score + boost))
+
+
+INTERNATIONAL_HEURISTICS = [
+    ("unrestricted work authorization", 0.18),
+    ("already authorized to work", 0.15),
+    ("must already have work authorization", 0.15),
+    ("no sponsorship", 0.12),
+    ("no visa", 0.12),
+    ("visa transfers", 0.12),
+    ("opt", 0.1),
+    ("cpt", 0.1),
+    ("north american", 0.12),
+    ("english only", 0.1),
+    ("english-only", 0.1),
+    ("u.s. work authorization", 0.12),
+    ("us work authorization", 0.12),
+    ("must be in north america", 0.12),
+    ("international candidates", 0.08),
+    ("international students", 0.08),
+    ("already in the us", 0.1),
+    ("already in the u.s.", 0.1),
+]
+
+
+def detect_international_bias_signal(text: str) -> float:
+    """Return a probability boost based on heuristic cues for international bias."""
+    text_lower = text.lower()
+    score = 0.0
+    for trigger, weight in INTERNATIONAL_HEURISTICS:
+        if trigger in text_lower:
+            score += weight
+    return min(0.35, score)
+
+
 def _mnli_entailment_probs(
     classifier: Dict,
     text: str,
@@ -92,7 +129,8 @@ def _extract_biased_sentences(
     if not text or not classifier:
         return []
 
-    flagged: List[Dict] = []
+    high_confidence: List[Dict] = []
+    low_confidence: List[Dict] = []
     sentences = _split_sentences_with_spans(text)
 
     for sentence, start, end in sentences:
@@ -104,25 +142,47 @@ def _extract_biased_sentences(
             sentence,
             [hypotheses[label] for label in candidate_labels],
         )
+        probs = list(probs)
+
+        sentence_intl_signal = detect_international_bias_signal(sentence)
+        if sentence_intl_signal and "intl-bias" in candidate_labels:
+            intl_idx = candidate_labels.index("intl-bias")
+            probs[intl_idx] = min(1.0, probs[intl_idx] + sentence_intl_signal)
+
         paired = list(zip(candidate_labels, probs))
         paired.sort(key=lambda x: x[1], reverse=True)
         top_label, top_score = paired[0]
 
-        if top_label != "neutral" and top_score >= threshold:
-            flagged.append(
-                {
-                    "sentence": sentence,
-                    "label": top_label,
-                    "score": round(float(top_score), 4),
-                    "start": start,
-                    "end": end,
-                }
-            )
+        if top_label == "neutral":
+            if sentence_intl_signal > 0:
+                top_label = "intl-bias"
+                top_score = sentence_intl_signal
+            else:
+                continue
+        elif top_label != "intl-bias" and sentence_intl_signal >= 0.05:
+            # Override ambiguous labels when international cues dominate.
+            top_label = "intl-bias"
+            top_score = max(top_score, sentence_intl_signal)
 
-        if len(flagged) >= max_sentences:
-            break
+        entry = {
+            "sentence": sentence,
+            "label": top_label,
+            "score": round(float(top_score), 4),
+            "calibrated_score": round(calibrate_confidence(float(top_score)), 4),
+            "confidence_level": "high" if top_score >= threshold else "low",
+            "start": start,
+            "end": end,
+        }
 
-    return flagged
+        if top_score >= threshold:
+            high_confidence.append(entry)
+            if len(high_confidence) >= max_sentences:
+                break
+        else:
+            low_confidence.append(entry)
+
+    combined = high_confidence + low_confidence
+    return combined[:max_sentences]
 
 
 def get_classifier():
@@ -342,6 +402,58 @@ BIAS_PHRASES = {
     },
     "no sponsorship": {
         "replacement": "work authorization required",
+        "category": "exclusionary_language",
+    },
+    "unrestricted work authorization": {
+        "replacement": "work authorization support available",
+        "category": "exclusionary_language",
+    },
+    "must already have work authorization": {
+        "replacement": "work authorization support available",
+        "category": "exclusionary_language",
+    },
+    "already authorized to work": {
+        "replacement": "work authorization support available",
+        "category": "exclusionary_language",
+    },
+    "no opt": {
+        "replacement": "",
+        "category": "exclusionary_language",
+    },
+    "no cpt": {
+        "replacement": "",
+        "category": "exclusionary_language",
+    },
+    "not considering opt": {
+        "replacement": "",
+        "category": "exclusionary_language",
+    },
+    "not considering cpt": {
+        "replacement": "",
+        "category": "exclusionary_language",
+    },
+    "no visa transfers": {
+        "replacement": "",
+        "category": "exclusionary_language",
+    },
+    "no transfer visas": {
+        "replacement": "",
+        "category": "exclusionary_language",
+    },
+    "north american applicants only": {
+        "replacement": "",
+        "category": "exclusionary_language",
+    },
+    "must be in north america": {
+        "replacement": "",
+        "category": "exclusionary_language",
+    },
+    "english only": {
+        "replacement": "professional proficiency in English required",
+        "category": "exclusionary_language",
+    },
+    "english-only": {
+        "replacement": "professional proficiency in English required",
         "category": "exclusionary_language",
     },
     "native english speaker": {
@@ -596,6 +708,7 @@ def analyze_with_classifier(text: str, timeout: int = 3) -> Dict:
             "age-bias",
             "gender-bias",
             "culture-fit-bias",
+            "intl-bias",
             "exclusionary-language",
             "disability-bias",
             "neutral",
@@ -611,6 +724,10 @@ def analyze_with_classifier(text: str, timeout: int = 3) -> Dict:
             "culture-fit-bias": (
                 "This job posting uses cultural fit or culture-related language that "
                 "may be exclusionary."
+            ),
+            "intl-bias": (
+                "This job posting discriminates against international students, visa "
+                "holders, or people who need work authorization support."
             ),
             "exclusionary-language": (
                 "This job posting clearly excludes or discourages certain groups, "
@@ -640,6 +757,11 @@ def analyze_with_classifier(text: str, timeout: int = 3) -> Dict:
             text_for_analysis,
             [hypotheses[label] for label in candidate_labels],
         )
+        if "intl-bias" in candidate_labels:
+            intl_idx = candidate_labels.index("intl-bias")
+            scores[intl_idx] = min(
+                1.0, scores[intl_idx] + detect_international_bias_signal(text_for_analysis)
+            )
         latency_ms = int((time.perf_counter() - start_time) * 1000)
 
         # Sort labels by score (descending) for compatibility with previous API
@@ -647,6 +769,7 @@ def analyze_with_classifier(text: str, timeout: int = 3) -> Dict:
         paired.sort(key=lambda x: x[1], reverse=True)
         sorted_labels = [p[0] for p in paired]
         sorted_scores = [float(p[1]) for p in paired]
+        calibrated_scores = [float(calibrate_confidence(score)) for score in sorted_scores]
 
         sentence_insights = _extract_biased_sentences(
             text_for_analysis,
@@ -664,6 +787,7 @@ def analyze_with_classifier(text: str, timeout: int = 3) -> Dict:
         return {
             "labels": sorted_labels,
             "scores": sorted_scores,
+            "calibrated_scores": calibrated_scores,
             "error": None,
             "provider": classifier.get("provider"),
             "latency_ms": latency_ms,
@@ -691,6 +815,7 @@ def analyze_with_classifier(text: str, timeout: int = 3) -> Dict:
         return {
             "labels": inferred_labels[:6],
             "scores": inferred_scores[:6],
+            "calibrated_scores": [float(calibrate_confidence(score)) for score in inferred_scores[:6]],
             "error": str(e),
             "fallback": True,
             "provider": "keyword_fallback",
@@ -723,20 +848,24 @@ def calculate_bias_score(keyword_results: Dict, classifier_results: Dict) -> int
     # dictionary phrases fire, especially for severe categories.
     if classifier_results.get("scores") and classifier_results.get("labels"):
         top_label = classifier_results["labels"][0]
-        top_score = float(classifier_results["scores"][0])
+        calibrated_scores = classifier_results.get("calibrated_scores")
+        top_score = float(
+            calibrated_scores[0] if calibrated_scores else classifier_results["scores"][0]
+        )
 
         if top_label != "neutral":
             label_weights = {
                 "exclusionary-language": 30,
                 "disability-bias": 30,
+                "intl-bias": 32,
                 "age-bias": 24,
                 "gender-bias": 24,
                 "culture-fit-bias": 18,
             }
             base_weight = label_weights.get(top_label, 12)
 
-            # Only trust the classifier when it's at least moderately confident.
-            if top_score >= 0.4:
+            # Lowered confidence requirement so borderline sentences still matter.
+            if top_score >= 0.25:
                 score += int(top_score * base_weight)
     
     return min(score, 100)
@@ -803,9 +932,12 @@ def calculate_inclusivity_score(keyword_results: Dict, classifier_results: Optio
     # don't fire, so clearly biased text isn't scored as a perfect 100.
     if classifier_results and classifier_results.get("labels") and classifier_results.get("scores"):
         top_label = classifier_results["labels"][0]
-        top_score = float(classifier_results["scores"][0])
-        if top_label != "neutral" and top_score >= 0.4:
-            # Up to -20 points for high-confidence non-neutral classification.
+        calibrated_scores = classifier_results.get("calibrated_scores")
+        top_score = float(
+            calibrated_scores[0] if calibrated_scores else classifier_results["scores"][0]
+        )
+        if top_label != "neutral" and top_score >= 0.25:
+            # Up to -20 points for non-neutral classification.
             overall_inclusivity = max(0, overall_inclusivity - top_score * 20.0)
     
     return {
@@ -891,7 +1023,7 @@ def analyze_full(text: str, use_nlp: bool = False) -> Dict:
     
     # Step 3: Calculate scores based on real analysis (keywords are primary)
     bias_score = calculate_bias_score(keyword_results, classifier_results or {})
-    intl_score = calculate_international_bias_score(keyword_results)
+    intl_score = calculate_international_bias_score(keyword_results, text)
     inclusivity_score = calculate_inclusivity_score(keyword_results, classifier_results)
     
     # Step 4: Generate red flags from real matches
@@ -923,27 +1055,50 @@ def analyze_full(text: str, use_nlp: bool = False) -> Dict:
     }
 
 
-def calculate_international_bias_score(keyword_results: Dict) -> int:
+def calculate_international_bias_score(keyword_results: Dict, source_text: Optional[str] = None) -> int:
     """Calculate international student specific bias score"""
     score = 0
     
     # Visa requirements (heavy penalty)
     exclusionary = keyword_results.get("exclusionary_language", {})
-    visa_count = sum(1 for match in exclusionary.get("matches", []) 
+    matches = exclusionary.get("matches", [])
+    visa_count = sum(1 for match in matches 
                     if "visa" in match.lower() or "sponsorship" in match.lower() 
                     or "eligible to work" in match.lower())
     score += visa_count * 30
     
     # Language bias
-    language_count = sum(1 for match in exclusionary.get("matches", []) 
+    language_count = sum(1 for match in matches 
                         if "native" in match.lower() or "english" in match.lower())
     score += language_count * 20
+    
+    # OPT/CPT and related restrictions
+    opt_cpt_count = sum(1 for match in matches if "opt" in match.lower() or "cpt" in match.lower())
+    score += opt_cpt_count * 25
     
     # Cultural assumptions
     score += keyword_results.get("cultural_fit", {}).get("count", 0) * 12
     
     # Other exclusionary terms
     score += keyword_results.get("age_biased", {}).get("count", 0) * 10
+
+    if source_text:
+        text_lower = source_text.lower()
+        heuristics = [
+            ("unrestricted work authorization", 20),
+            ("already authorized to work", 15),
+            ("must be in north america", 15),
+            ("north american applicants only", 20),
+            ("opt", 10),
+            ("cpt", 10),
+            ("english only", 10),
+            ("english-only", 10),
+            ("already in the us", 12),
+            ("already in the u.s.", 12),
+        ]
+        for trigger, weight in heuristics:
+            if trigger in text_lower:
+                score += weight
     
     return min(score, 100)
 

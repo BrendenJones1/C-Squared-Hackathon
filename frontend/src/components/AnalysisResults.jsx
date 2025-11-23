@@ -52,6 +52,7 @@ function AnalysisResults({ results }) {
     'gender-bias': 'Gender bias',
     'age-bias': 'Age bias',
     'culture-fit-bias': 'Culture fit bias',
+    'intl-bias': 'International bias',
     'exclusionary-language': 'Exclusionary language',
     'disability-bias': 'Disability bias',
     neutral: 'Neutral / inclusive'
@@ -62,8 +63,17 @@ function AnalysisResults({ results }) {
     return classificationLabelMap[label] || label.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   }
 
+  const formatSentenceConfidence = (level) => {
+    if (level === 'low') return 'Model unsure'
+    if (level === 'high') return 'Model confident'
+    return 'Model signal'
+  }
+
   const topLabel = classification?.labels?.[0]
-  const topScore = classification?.scores?.[0]
+  const classifierScoreSource = classification?.calibrated_scores?.length
+    ? classification.calibrated_scores
+    : classification?.scores
+  const topScore = classifierScoreSource?.[0]
   const classifierConfidence = typeof topScore === 'number' ? Math.round(topScore * 100) : null
   const hasSentenceInsights = Array.isArray(sentence_insights) && sentence_insights.length > 0
 
@@ -648,7 +658,9 @@ function AnalysisResults({ results }) {
             <div className="nlp-sentence-header">
               <h4>Top flagged sentences</h4>
               <span className="nlp-sentence-subtitle">
-                {hasSentenceInsights ? `Showing up to ${Math.min(3, sentence_insights.length)} of ${sentence_insights.length}` : 'Model confidence below threshold'}
+                {hasSentenceInsights
+                  ? `Showing up to ${Math.min(3, sentence_insights.length)} of ${sentence_insights.length} (includes low-confidence suggestions)`
+                  : 'Model confidence below threshold'}
               </span>
             </div>
             {hasSentenceInsights ? (
@@ -659,9 +671,16 @@ function AnalysisResults({ results }) {
                       <span className="nlp-sentence-label">
                         {formatClassificationLabel(insight.label)}
                       </span>
-                      <span className="nlp-sentence-score">
-                        {Math.round((insight.score || 0) * 100)}%
-                      </span>
+                      <div className="nlp-sentence-meta-right">
+                        <span
+                          className={`nlp-sentence-confidence ${insight.confidence_level === 'low' ? 'low' : 'high'}`}
+                        >
+                          {formatSentenceConfidence(insight.confidence_level)}
+                        </span>
+                        <span className="nlp-sentence-score">
+                          {Math.round((insight.calibrated_score ?? insight.score ?? 0) * 100)}%
+                        </span>
+                      </div>
                     </div>
                     <p>“{insight.sentence}”</p>
                   </li>

@@ -76,6 +76,7 @@ function RewritePanel({
     'gender-bias': 'Gender bias',
     'age-bias': 'Age bias',
     'culture-fit-bias': 'Culture fit bias',
+    'intl-bias': 'International bias',
     'exclusionary-language': 'Exclusionary language',
     'disability-bias': 'Disability bias',
   }
@@ -85,6 +86,12 @@ function RewritePanel({
   const formatLabel = (label) => {
     if (!label) return 'Bias'
     return labelMap[label] || label.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  }
+
+  const formatConfidenceLabel = (level) => {
+    if (level === 'low') return 'Model unsure'
+    if (level === 'high') return 'Model confident'
+    return 'Model signal'
   }
 
   const highlightBiasedWords = (text) => {
@@ -322,8 +329,11 @@ function RewritePanel({
                       {formatLabel(insight.label)}
                     </span>
                     <span className="nlp-score">
-                      {Math.round((insight.score || 0) * 100)}% confidence
+                      {Math.round((insight.calibrated_score ?? insight.score ?? 0) * 100)}% confidence
                     </span>
+                  </div>
+                  <div className={`nlp-confidence-chip ${insight.confidence_level === 'low' ? 'low' : 'high'}`}>
+                    {formatConfidenceLabel(insight.confidence_level)}
                   </div>
                   <p className="nlp-sentence-text">“{insight.sentence}”</p>
                 </li>

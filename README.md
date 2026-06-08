@@ -1,6 +1,6 @@
 # BiasLens - Job Bias Detection Tool
 
-##About the Project
+## About the Project
 
 BiasLens was developed during C² Hacks, a TikTok-sponsored hackathon focused on building innovative technology solutions to real-world problems. Our team created BiasLens to help job seekers identify potentially biased or exclusionary language in job postings and provide AI-powered recommendations for creating more inclusive opportunities. The project placed 4th overall in the competition.
 

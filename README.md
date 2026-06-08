@@ -1,6 +1,6 @@
 # BiasLens - Job Bias Detection Tool
 
-A web application that analyzes job postings for bias and provides inclusive alternatives, similar to Simplify's UX but focused on bias detection.
+A web application that analyzes job postings for bias and provides inclusive alternatives.
 
 ## Features
 
